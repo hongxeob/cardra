@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.jpa") version "2.0.0"
     id("org.springframework.boot") version "3.4.1"
     id("io.spring.dependency-management") version "1.1.5"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
 
 group = "com.cardra"
@@ -26,6 +27,18 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+ktlint {
+    version.set("1.0.0")
+    debug.set(false)
+    verbose.set(false)
+    outputToConsole.set(true)
+    ignoreFailures.set(false)
+}
+
+tasks.named("check") {
+    dependsOn("ktlintCheck")
 }
 
 tasks.withType<Test> {

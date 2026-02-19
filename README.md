@@ -35,3 +35,14 @@ docker compose up --build -d
 - 서버 MVP 뼈대 구축 완료
 - 에이전트 운영 문서 정합성 구성
 - 다음: 에이전트 호출 어댑터(리서치/작성/디자인), DB 스키마 검증, API 계약 테스트
+
+## Git Hook 설정
+
+커밋/푸시 시 `ktlintCheck`를 자동으로 돌리려면 아래를 1회 실행:
+
+```bash
+cd /Users/hongxeob/Desktop/project/cardra
+./scripts/setup-hooks.sh
+```
+
+이후 pre-commit, pre-push에서 `ktlintCheck`가 강제됩니다.
