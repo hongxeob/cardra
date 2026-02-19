@@ -1,0 +1,14 @@
+:root {
+  --color-main: #00A676;
+  --color-sub: #E0D0C1;
+  --color-bg: #F8FAF9;
+  --color-surface: #FFFFFF;
+  --color-text: #0F172A;
+  --color-text-muted: #334155;
+  --color-border: #E5E7EB;
+
+  --font-sans: Pretendard, SUIT, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  --card-radius: 12px;
+  --space-md: 12px;
+  --space-lg: 20px;
+}

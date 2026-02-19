@@ -1,0 +1,59 @@
+@import './tokens.css';
+
+* { box-sizing: border-box; }
+
+:root {
+  font-family: var(--font-sans, Pretendard, system-ui, -apple-system, sans-serif);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a { color: var(--color-main); }
+
+.app-shell {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+button {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--color-main);
+  color: #fff;
+}
+
+.secondary {
+  background: var(--color-sub);
+  color: #1f2937;
+}
+
+.error { color: #b91c1c; }
+
+.card {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.04);
+}
