@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/cardra}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:${DB_PORT:5434}/cardra}
     username: ${SPRING_DATASOURCE_USERNAME:cardra_user}
     password: ${SPRING_DATASOURCE_PASSWORD:cardra_pw}
     driver-class-name: org.postgresql.Driver
@@ -15,7 +15,13 @@ spring:
     init:
       mode: never
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:9999}
 app:
   card:
     max-source-links: 3
+cardra:
+  agent:
+    external:
+      enabled: false
+      timeout-seconds: 6
+      endpoint: ""
