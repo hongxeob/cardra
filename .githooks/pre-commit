@@ -1,17 +1,24 @@
 #!/usr/bin/env sh
 set -eu
-
 set -o pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT_DIR/apps/server"
+SERVER_DIR="$ROOT_DIR/apps/server"
+GRADLE_WRAPPER="$SERVER_DIR/gradlew"
+
+if [ ! -x "$GRADLE_WRAPPER" ]; then
+  echo "[pre-commit] ERROR: gradle wrapper not found or not executable: $GRADLE_WRAPPER"
+  exit 1
+fi
+
+cd "$SERVER_DIR"
 
 if [ -n "${JAVA_HOME:-}" ]; then
   echo "[pre-commit] Using JAVA_HOME=$JAVA_HOME"
 fi
 
-echo "[pre-commit] Running ktlintFormat (strict mode)"
-./gradlew ktlintFormat
+echo "[pre-commit] Running ktlintFormat (strict mode) in $SERVER_DIR"
+"$GRADLE_WRAPPER" ktlintFormat
 
 echo "[pre-commit] Ensure formatter changes are committed"
 if ! git diff --exit-code --quiet; then
@@ -20,4 +27,4 @@ if ! git diff --exit-code --quiet; then
 fi
 
 echo "[pre-commit] Running ktlintCheck"
-./gradlew ktlintCheck
+"$GRADLE_WRAPPER" ktlintCheck
