@@ -23,6 +23,48 @@
    ./gradlew bootRun
    ```
 
+## 실제 AI 연동 테스트 (OpenAI)
+
+`ResearchService`는 아래 우선순위로 데이터를 조회합니다.
+1. OpenAI 직접 호출 (`cardra.research.openai`)
+2. 외부 Research API (`cardra.research.external`)
+3. 내장 Stub fallback
+
+### 필요한 키/플랫폼
+- 플랫폼: OpenAI API
+- 필요한 것: `OPENAI_API_KEY` (OpenAI API key)
+- 발급 위치: OpenAI 플랫폼의 API keys 페이지
+
+### 로컬에서 키 연결
+```bash
+cd apps/server
+export OPENAI_API_KEY="sk-..."
+export CARDRA_RESEARCH_OPENAI_ENABLED=true
+# 필요 시 모델 교체
+export OPENAI_MODEL="gpt-4.1-mini"
+```
+
+### 실행 및 호출 확인
+```bash
+cd apps/server
+./gradlew bootRun
+```
+
+별도 터미널:
+```bash
+curl -s -X POST http://localhost:9999/api/v1/research/run \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "keyword":"AI 에이전트",
+    "language":"ko",
+    "country":"KR",
+    "timeRange":"24h",
+    "maxItems":3
+  }'
+```
+
+응답에서 `items`, `summary`, `usage` 필드가 채워지면 OpenAI 경로 또는 fallback 경로가 정상 동작합니다.
+
 ## 코드 스타일
 - `ktlint` 적용: `./gradlew ktlintCheck`
 - 추천: 커밋 전후 `ktlintCheck` 통과 필수

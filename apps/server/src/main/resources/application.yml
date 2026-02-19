@@ -25,3 +25,14 @@ cardra:
       enabled: false
       timeout-seconds: 6
       endpoint: ""
+  research:
+    openai:
+      enabled: ${CARDRA_RESEARCH_OPENAI_ENABLED:false}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      model: ${OPENAI_MODEL:gpt-4.1-mini}
+      api-key: ${OPENAI_API_KEY:}
+      timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:20}
+    external:
+      enabled: false
+      timeout-seconds: 6
+      endpoint: ""

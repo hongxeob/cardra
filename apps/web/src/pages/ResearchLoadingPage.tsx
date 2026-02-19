@@ -14,7 +14,10 @@ export function ResearchLoadingPage() {
     queryKey: ['research-status', jobId],
     enabled: Boolean(jobId),
     queryFn: () => researchApi.getStatus(jobId ?? ''),
-    refetchInterval: 2500,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return (status === 'completed' || status === 'failed' || status === 'cancelled') ? false : 2000
+    },
   })
 
   const cancelMut = useMutation({
@@ -22,13 +25,19 @@ export function ResearchLoadingPage() {
   })
 
   useEffect(() => {
-    if (data?.status && ['completed', 'failed', 'cancelled'].includes(data.status)) {
+    if (data?.status === 'completed') {
+      const timer = setTimeout(() => {
+        navigate(`/research/${jobId}/result`)
+      }, 1500)
+      return () => clearTimeout(timer)
+    }
+    if (data?.status === 'failed' || data?.status === 'cancelled') {
       navigate(`/research/${jobId}/result`)
     }
   }, [data?.status, jobId, navigate])
 
   if (isLoading) {
-    return <LoadingCard label="리서치 상태를 확인 중입니다." />
+    return <LoadingCard label="서버와 연결을 확인 중입니다..." />
   }
 
   if (error) {
@@ -37,30 +46,75 @@ export function ResearchLoadingPage() {
       <ErrorCard
         error={err}
         onRetry={() => refetch()}
-        onBack={() => {
-          if (jobId) {
-            navigate(`/research/${jobId}/result`)
-          }
-        }}
+        onBack={() => navigate('/create')}
       />
     )
   }
 
+  const isCompleted = data?.status === 'completed'
+  const isFailed = data?.status === 'failed'
+
   return (
-    <div>
-      <h2>리서치 진행중</h2>
-      <p>jobId: {jobId}</p>
-      <p>상태: {data?.status ?? 'loading'}</p>
-      {data?.createdAt ? <p>createdAt: {data.createdAt}</p> : null}
-      <p>마지막 갱신: {data ? new Date().toLocaleTimeString() : '-'}</p>
-      <div className="row" style={{ marginTop: 12 }}>
-        <button className="secondary" onClick={() => navigate(`/research/${jobId}/result`)}>
-          결과 확인
+    <div style={{ animation: 'fadeIn 0.5s ease-out', padding: 'var(--space-xl) 0' }}>
+      <header style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
+        <div className="spinner" style={{ 
+          width: '64px', 
+          height: '64px', 
+          margin: '0 auto var(--space-lg)',
+          borderWidth: '6px',
+          borderTopColor: isCompleted ? 'var(--color-success)' : isFailed ? 'var(--color-error)' : 'var(--color-main)'
+        }}></div>
+        <h2 style={{ fontSize: '28px' }}>
+          {isCompleted ? '분석이 완료되었습니다!' : isFailed ? '분석 중 오류 발생' : '데이터를 딥 리서치 중입니다'}
+        </h2>
+        <p className="muted" style={{ marginTop: 'var(--space-sm)' }}>
+          {isCompleted ? '결과 리포트를 생성하고 있습니다.' : `Job ID: ${jobId}`}
+        </p>
+      </header>
+
+      <div className="card" style={{ background: 'var(--color-surface)', display: 'grid', gap: 'var(--space-md)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 600 }}>상태</span>
+          <span className="badge" style={{ 
+            background: isCompleted ? 'var(--color-success)' : isFailed ? 'var(--color-error)' : 'var(--color-main-soft)',
+            color: isCompleted || isFailed ? '#fff' : 'var(--color-main)',
+            border: 'none',
+            textTransform: 'uppercase'
+          }}>
+            {data?.status ?? 'pending'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 600 }}>시작 시간</span>
+          <span className="muted">{data?.createdAt ? new Date(data.createdAt).toLocaleTimeString() : '-'}</span>
+        </div>
+      </div>
+
+      <div className="row" style={{ marginTop: 'var(--space-xl)', gap: 'var(--space-md)' }}>
+        <button 
+          className="secondary" 
+          style={{ flex: 1 }} 
+          onClick={() => navigate(`/research/${jobId}/result`)}
+          disabled={!isCompleted && !isFailed}
+        >
+          결과 미리보기
         </button>
-        <button className="primary" onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending}>
-          {cancelMut.isPending ? '취소중...' : '취소'}
+        <button 
+          className="primary" 
+          style={{ flex: 1 }} 
+          onClick={() => cancelMut.mutate()} 
+          disabled={cancelMut.isPending || isCompleted || isFailed || data?.status === 'cancelled'}
+        >
+          {cancelMut.isPending ? '취소 중...' : '작업 취소'}
         </button>
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }

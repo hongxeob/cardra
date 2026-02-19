@@ -60,18 +60,25 @@ export function HomePage() {
       .catch(() => setHealth('bad'))
   }, [])
 
+  // Mock recent cards for enhanced design
+  const recentCards = [
+    { id: '1', keyword: '2026 AI 트렌드', date: '2시간 전', emoji: '🤖' },
+    { id: '2', keyword: '건강한 식단 팁', date: '5시간 전', emoji: '🥗' },
+    { id: '3', keyword: '테크 뉴스 요약', date: '어제', emoji: '📱' },
+  ]
+
   return (
     <section style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <header className="home-hero">
         <p className="home-eyebrow">Smart Content Orchestrator</p>
-        <h1>Cardra</h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '18px', maxWidth: '320px', margin: '0 auto var(--space-lg)' }}>
+        <h1 style={{ letterSpacing: '-0.04em', fontWeight: 900 }}>Cardra</h1>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '18px', maxWidth: '320px', margin: '0 auto var(--space-lg)', lineHeight: 1.4 }}>
           당신의 아이디어를 임팩트 있는 <strong style={{ color: 'var(--color-main)' }}>카드 뉴스</strong>로 변환하세요.
         </p>
         <HealthBadge health={health} />
       </header>
 
-      <div className="home-actions" style={{ display: 'grid', gap: 'var(--space-md)' }}>
+      <div className="home-actions" style={{ display: 'grid', gap: 'var(--space-md)', marginBottom: 'var(--space-xl)' }}>
         {quickActions.map((action) => (
           <Link key={action.key} to={action.to} className="home-link">
             <button className="card" style={{ 
@@ -82,6 +89,7 @@ export function HomePage() {
               gap: 'var(--space-md)',
               padding: 'var(--space-lg)',
               border: '2px solid transparent',
+              background: action.key.includes('create') ? 'var(--color-surface)' : 'var(--color-bg)'
             }}>
               <span style={{ fontSize: '32px' }}>{action.icon}</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -94,7 +102,25 @@ export function HomePage() {
         ))}
       </div>
 
-      <footer style={{ marginTop: 'var(--space-xl)', textAlign: 'center' }}>
+      <section className="recent-section">
+        <h3 style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: 'var(--space-md)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>최근 생성된 카드</h3>
+        <div style={{ display: 'grid', gap: 'var(--space-sm)' }}>
+          {recentCards.map(card => (
+            <Link key={card.id} to={`/cards/${card.id}`} style={{ textDecoration: 'none' }}>
+              <div className="card" style={{ padding: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)', border: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: '24px' }}>{card.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text)' }}>{card.keyword}</p>
+                  <p className="muted" style={{ fontSize: '12px' }}>{card.date}</p>
+                </div>
+                <span style={{ color: 'var(--color-border)' }}>›</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <footer style={{ marginTop: 'var(--space-xl)', textAlign: 'center', padding: 'var(--space-lg) 0' }}>
         <p className="muted" style={{ fontSize: '12px' }}>
           Powered by Gemini Agent Engine
         </p>
@@ -107,8 +133,12 @@ export function HomePage() {
         }
         .home-link .card:hover {
           border-color: var(--color-main);
-          background: var(--color-main-soft);
+          background: var(--color-main-soft) !important;
           transform: translateY(-2px);
+        }
+        .recent-section .card:hover {
+          border-color: var(--color-sub);
+          background: var(--color-bg);
         }
       `}</style>
     </section>

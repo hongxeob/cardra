@@ -13,6 +13,7 @@ const userId = 'local-user'
 export function CreatePage() {
   const [keyword, setKeyword] = useState('')
   const [tone, setTone] = useState('minimal')
+  const [categoryId, setCategoryId] = useState('tech')
   const navigate = useNavigate()
   const [researchMode, setResearchMode] = useState(false)
 
@@ -21,16 +22,24 @@ export function CreatePage() {
     isLoading: isRecommendLoading,
     refetch: loadRecommendations,
   } = useQuery({
-    queryKey: ['recommend-keywords', keyword],
-    enabled: keyword.length >= 2,
+    queryKey: ['recommend-keywords', keyword, categoryId],
+    enabled: keyword.length >= 2 || !!categoryId,
     staleTime: 30_000,
     queryFn: () =>
       recommendApi.keywords({
         userId,
         currentQuery: keyword,
+        categoryId: categoryId,
         limit: 5,
       }),
   })
+
+  const categories = [
+    { id: 'tech', label: 'IT/테크', icon: '💻' },
+    { id: 'health', label: '건강/푸드', icon: '🥗' },
+    { id: 'finance', label: '경제/금융', icon: '📈' },
+    { id: 'culture', label: '문화/생활', icon: '🎨' },
+  ]
 
   const cardMut = useMutation({
     mutationFn: () => cardApi.generate({ keyword, tone }),
@@ -108,11 +117,37 @@ export function CreatePage() {
 
       <form onSubmit={handleSubmit} className="card-form">
         <div className="field">
+          <label>관심 카테고리</label>
+          <div className="chips-wrap" style={{ gap: 'var(--space-sm)' }}>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className="chip"
+                style={{ 
+                  background: categoryId === cat.id ? 'var(--color-main)' : 'var(--color-bg)',
+                  color: categoryId === cat.id ? '#fff' : 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  minHeight: '36px'
+                }}
+                onClick={() => setCategoryId(cat.id)}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
           <label>주제 및 키워드</label>
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="예: 2026 AI 트렌드, 건강한 식습관"
+            placeholder="주제를 입력하거나 추천 키워드를 선택하세요"
             autoFocus
           />
         </div>
