@@ -3,6 +3,11 @@
 .gradle/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Node.js / frontend
+**/node_modules/
+**/dist/
+apps/web/*.log
+
 # IDE
 .idea/
 *.iml
