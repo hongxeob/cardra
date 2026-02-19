@@ -10,5 +10,14 @@ if [ -n "${JAVA_HOME:-}" ]; then
   echo "[pre-commit] Using JAVA_HOME=$JAVA_HOME"
 fi
 
-echo "[pre-commit] Running ktlintCheck with Java 21 check..."
+echo "[pre-commit] Running ktlintFormat (strict mode)"
+./gradlew ktlintFormat
+
+echo "[pre-commit] Ensure formatter changes are committed"
+if ! git diff --exit-code --quiet; then
+  echo "[pre-commit] ktlintFormat modified files. Please re-add changes and commit again."
+  exit 1
+fi
+
+echo "[pre-commit] Running ktlintCheck"
 ./gradlew ktlintCheck

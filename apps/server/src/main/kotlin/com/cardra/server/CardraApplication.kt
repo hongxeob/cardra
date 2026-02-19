@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class CardraApplication
 
 fun main(args: Array<String>) {
-    runApplication<CardraApplication>(*args)
+  runApplication<CardraApplication>(*args)
 }
