@@ -27,6 +27,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:1.13.12")
 }
 
 ktlint {
@@ -50,4 +51,3 @@ kotlin {
         freeCompilerArgs.add("-Xjsr305=strict")
     }
 }
-

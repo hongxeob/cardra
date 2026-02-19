@@ -59,3 +59,7 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
 ./gradlew -version
 ./gradlew test
 ```
+
+## 다음 프로세스 진행 상태
+- 외부 에이전트(리서치/작성/디자인)는 `service.agent` 인터페이스로 추상화해 교체 가능한 구조로 정리
+- 현재는 Mock 기반 3장 카드 생성 파이프라인을 기본 운영하고, 차후 실제 API 클라이언트로 대체 예정

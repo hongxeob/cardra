@@ -35,3 +35,14 @@
   ./gradlew -version
   ```
 - `./gradlew`는 Java 21이 아닌 환경에서 실행되면 실패하도록 가드가 걸려 있습니다.
+
+## Agent Adapter 레이어
+- 카드 본문 생성은 `service.agent.AgentAdapter` 인터페이스로 분리
+- 기본 구현은 `MockAgentAdapter` (stub)로 제공
+- 추후 실제 Gemini/Claude 연동은 별도 구현체를 추가해 DI 교체
+
+## 테스트
+```bash
+cd apps/server
+./gradlew test
+```
