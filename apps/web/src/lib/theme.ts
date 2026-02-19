@@ -9,9 +9,41 @@ export const defaultTheme = {
   '--card-accent': '#E0D0C1',
 }
 
-export function applyThemeVariables() {
+function asEntry(k: string, v: string | undefined): [string, string] {
+  return [k, String(v)]
+}
+
+export function applyThemeVariables(overrides: Record<string, string> = {}) {
   const root = document.documentElement
-  for (const [key, value] of Object.entries(defaultTheme)) {
+
+  for (const [key, value] of Object.entries({ ...defaultTheme, ...overrides })) {
     root.style.setProperty(key, value)
+  }
+}
+
+export async function hydrateThemeFromServer() {
+  try {
+    const res = await fetch('/api/v1/ui/theme')
+    if (!res.ok) {
+      return
+    }
+
+    const json = (await res.json()) as {
+      mainColor?: string
+      subColor?: string
+      background?: string
+      textPrimary?: string
+      textSecondary?: string
+    }
+
+    applyThemeVariables({
+      '--color-main': json.mainColor || defaultTheme['--color-main'],
+      '--color-sub': json.subColor || defaultTheme['--color-sub'],
+      '--color-bg': json.background || defaultTheme['--color-bg'],
+      '--color-text': json.textPrimary || defaultTheme['--color-text'],
+      '--color-text-muted': json.textSecondary || defaultTheme['--color-text-muted'],
+    })
+  } catch {
+    // Keep default theme if server theme endpoint is unavailable in dev/proxy.
   }
 }

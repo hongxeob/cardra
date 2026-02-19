@@ -4,6 +4,8 @@ import com.cardra.server.domain.CardStatus
 import com.cardra.server.dto.CardItem
 import com.cardra.server.dto.CardResponse
 import com.cardra.server.dto.CreateCardRequest
+import com.cardra.server.exception.CardNotFoundException
+import com.cardra.server.exception.GlobalExceptionHandler
 import com.cardra.server.service.CardService
 import io.mockk.every
 import io.mockk.mockk
@@ -20,7 +22,10 @@ import java.util.UUID
 
 class CardControllerTest {
     private val service: CardService = mockk(relaxed = true)
-    private val mvc: MockMvc = MockMvcBuilders.standaloneSetup(CardController(service)).build()
+    private val mvc: MockMvc =
+        MockMvcBuilders.standaloneSetup(CardController(service))
+            .setControllerAdvice(GlobalExceptionHandler())
+            .build()
     private val request = CreateCardRequest("AI", "neutral")
 
     @Test
@@ -91,12 +96,24 @@ class CardControllerTest {
         mvc.perform(get("/api/v1/cards/$cardId"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(cardId.toString()))
-            .andExpect(jsonPath("$.cards.length()").value(1))
+            .andExpect(jsonPath("$.cards.length()" ).value(1))
+    }
+
+    @Test
+    fun `get card returns 404 if not found`() {
+        val missingId = UUID.fromString("99999999-1111-1111-1111-111111111111")
+        every { service.getCard(missingId) } throws CardNotFoundException("Card not found: $missingId")
+
+        mvc.perform(get("/api/v1/cards/$missingId"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+            .andExpect(jsonPath("$.retryable").value(false))
     }
 
     @Test
     fun `health is okay`() {
-        val mvc2: MockMvc = MockMvcBuilders.standaloneSetup(HealthController()).build()
+        val mvc2: MockMvc =
+            MockMvcBuilders.standaloneSetup(HealthController()).build()
 
         mvc2.perform(get("/api/v1/health"))
             .andExpect(status().isOk)
