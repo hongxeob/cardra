@@ -11,6 +11,7 @@ import com.cardra.server.dto.ResearchRunRequest
 import com.cardra.server.dto.ResearchRunResponse
 import com.cardra.server.dto.ResearchUsageDto
 import com.cardra.server.exception.ResearchJobNotFoundException
+import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -18,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import org.springframework.stereotype.Service
 
 private const val CACHE_TTL_SEC = 180
 

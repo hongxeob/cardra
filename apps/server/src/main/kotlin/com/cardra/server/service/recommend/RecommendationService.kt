@@ -51,7 +51,7 @@ class RecommendationService {
                     RecommendCandidate(
                         keyword =
                             if (req.currentQuery.isNullOrBlank()) {
-                                "${categorySafe} 인사이트 #${index + 1}"
+                                "$categorySafe 인사이트 #${index + 1}"
                             } else {
                                 "$base 연관 #${index + 1}"
                             },

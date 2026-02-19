@@ -96,7 +96,7 @@ class CardControllerTest {
         mvc.perform(get("/api/v1/cards/$cardId"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(cardId.toString()))
-            .andExpect(jsonPath("$.cards.length()" ).value(1))
+            .andExpect(jsonPath("$.cards.length()").value(1))
     }
 
     @Test
