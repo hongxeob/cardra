@@ -8,6 +8,7 @@
 - `cardra-designer-guidelines.md` : Nano Banana 기준 레이아웃/톤 가이드
 - `cardra-recommender-mvp.md` : 추천 엔진 MVP 설계
 - `cardra-docs-source-audit-2026-02-19.md` : 외부 공식 문서 기반 갭 분석/보강 리포트
+- `cardra-session-log-2026-02-19.md` : 2026-02-19 세션 작업 로그/검증/다음 TODO
 
 ## 사용법
 - 코드 이슈/백로그를 생성할 때는 해당 문서를 링크로 첨부 후, "영향 파일"과 "테스트 변경"을 함께 적기
