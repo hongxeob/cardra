@@ -18,5 +18,12 @@ Cardra는 키워드 기반 트렌드 카드뉴스 자동 생성 프로젝트입�
 - 에이전트 우선순위: PM/총괄(Codex) → 리서치/디자인(Gemini) → 실행(Codex)
 - 출력 형식: 카드뉴스 2~3장, 카드당 120~180자
 
+## 서버 스펙
+
+- **Backend:** Spring Boot (Kotlin)
+- **Language:** Kotlin
+- **Database:** PostgreSQL
+- 실행 앱 위치: `apps/server/`
+
 ## 참조
 - Obsidian 아이디어 패키지에서 cardra 컨셉/브레인스토밍을 기반으로 진행
