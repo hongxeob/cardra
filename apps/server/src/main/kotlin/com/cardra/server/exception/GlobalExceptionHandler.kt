@@ -2,7 +2,6 @@ package com.cardra.server.exception
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -13,27 +12,25 @@ import java.util.UUID
 @RestControllerAdvice
 class GlobalExceptionHandler {
     @ExceptionHandler(CardNotFoundException::class)
-    fun handleNotFound(e: CardNotFoundException): ResponseEntity<ErrorBody> {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ErrorBody(code = "NOT_FOUND", message = e.message ?: "Not found", retryable = false))
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleNotFound(e: CardNotFoundException): ErrorBody {
+        return ErrorBody(code = "NOT_FOUND", message = e.message ?: "Not found", retryable = false)
     }
 
     @ExceptionHandler(ResearchJobNotFoundException::class)
-    fun handleResearchJobNotFound(e: ResearchJobNotFoundException): ResponseEntity<ErrorBody> {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(
-                ErrorBody(
-                    code = "RESEARCH_JOB_NOT_FOUND",
-                    message = e.message ?: "Research job not found",
-                    retryable = false,
-                ),
-            )
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleResearchJobNotFound(e: ResearchJobNotFoundException): ErrorBody {
+        return ErrorBody(
+            code = "RESEARCH_JOB_NOT_FOUND",
+            message = e.message ?: "Research job not found",
+            retryable = false,
+        )
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
-    fun handleBadRequest(e: IllegalArgumentException): ResponseEntity<ErrorBody> {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ErrorBody(code = "BAD_REQUEST", message = e.message ?: "Bad request", retryable = false))
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleBadRequest(e: IllegalArgumentException): ErrorBody {
+        return ErrorBody(code = "BAD_REQUEST", message = e.message ?: "Bad request", retryable = false)
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
@@ -44,17 +41,15 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception::class)
-    fun handleAny(e: Exception): ResponseEntity<ErrorBody> {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(
-                ErrorBody(
-                    code = "INTERNAL_ERROR",
-                    message = e.message ?: "Unexpected error",
-                    retryable = true,
-                    retryAfter = 5,
-                    traceId = "trace-${UUID.randomUUID()}",
-                ),
-            )
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleAny(e: Exception): ErrorBody {
+        return ErrorBody(
+            code = "INTERNAL_ERROR",
+            message = e.message ?: "Unexpected error",
+            retryable = true,
+            retryAfter = 5,
+            traceId = "trace-${UUID.randomUUID()}",
+        )
     }
 }
 
