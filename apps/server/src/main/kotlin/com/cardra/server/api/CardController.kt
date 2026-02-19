@@ -17,20 +17,20 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/v1/cards")
 class CardController(
-    private val cardService: CardService,
+  private val cardService: CardService,
 ) {
-    @PostMapping("/generate")
-    fun generate(
-        @Valid @RequestBody req: CreateCardRequest,
-    ): ResponseEntity<CardResponse> {
-        val result = cardService.createCard(req)
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(result)
-    }
+  @PostMapping("/generate")
+  fun generate(
+    @Valid @RequestBody req: CreateCardRequest,
+  ): ResponseEntity<CardResponse> {
+    val result = cardService.createCard(req)
+    return ResponseEntity.status(HttpStatus.ACCEPTED).body(result)
+  }
 
-    @GetMapping("/{id}")
-    fun get(
-        @PathVariable id: UUID,
-    ): ResponseEntity<CardResponse> {
-        return ResponseEntity.ok(cardService.getCard(id))
-    }
+  @GetMapping("/{id}")
+  fun get(
+    @PathVariable id: UUID,
+  ): ResponseEntity<CardResponse> {
+    return ResponseEntity.ok(cardService.getCard(id))
+  }
 }
