@@ -29,11 +29,20 @@ function FactcheckClaims({ claims }: { claims: Array<{ claimText: string; verdic
 export function ResearchResultView({ result }: { result: ResearchRunResponse }) {
   return (
     <div className="research-result-grid" style={{ display: 'grid', gap: 'var(--space-lg)' }}>
-      <section className="card" style={{ background: 'var(--color-main)', color: '#fff' }}>
-        <h3 style={{ color: '#fff', marginBottom: 'var(--space-sm)' }}>AI 요약 리포트</h3>
-        <p style={{ fontSize: '16px', lineHeight: 1.6, marginBottom: 'var(--space-md)' }}>{result.summary.brief}</p>
-        <div style={{ padding: 'var(--space-sm)', background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', fontSize: '13px' }}>
-          <strong>분석 노트:</strong> {result.summary.analystNote}
+      <section className="card" style={{ 
+        background: 'linear-gradient(135deg, var(--color-main) 0%, #008f65 100%)', 
+        color: '#fff',
+        border: 'none',
+        boxShadow: '0 10px 20px rgba(0, 166, 118, 0.15)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 'var(--space-md)' }}>
+           <span style={{ fontSize: '24px' }}>📝</span>
+           <h3 style={{ color: '#fff', fontSize: '20px' }}>오늘의 이슈 핵심 요약</h3>
+        </div>
+        <p style={{ fontSize: '17px', lineHeight: 1.7, marginBottom: 'var(--space-md)', fontWeight: 500 }}>{result.summary.brief}</p>
+        <div style={{ padding: 'var(--space-md)', background: 'rgba(255,255,255,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+          <strong style={{ opacity: 0.9 }}>AI Analyst Note:</strong><br/>
+          <span style={{ opacity: 0.95 }}>{result.summary.analystNote}</span>
         </div>
         <div className="research-badges" style={{ marginTop: 'var(--space-md)' }}>
           <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none' }}>

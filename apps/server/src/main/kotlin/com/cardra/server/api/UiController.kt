@@ -3,6 +3,8 @@ package com.cardra.server.api
 import com.cardra.server.dto.UiContractsResponse
 import com.cardra.server.dto.UiRouteInfo
 import com.cardra.server.dto.UiThemeResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -10,8 +12,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/ui")
+@Tag(name = "UI", description = "UI contract and theme metadata APIs")
 class UiController {
     @GetMapping("/theme")
+    @Operation(summary = "Get UI theme", description = "Return UI color theme metadata")
     fun theme(): ResponseEntity<UiThemeResponse> {
         return ResponseEntity.ok(
             UiThemeResponse(
@@ -22,6 +26,7 @@ class UiController {
     }
 
     @GetMapping("/contracts")
+    @Operation(summary = "Get UI contracts", description = "Return UI theme and backend route contract metadata")
     fun contracts(): ResponseEntity<UiContractsResponse> {
         return ResponseEntity.ok(
             UiContractsResponse(

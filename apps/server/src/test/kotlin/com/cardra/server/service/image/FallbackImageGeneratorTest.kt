@@ -20,6 +20,7 @@ class FallbackImageGeneratorTest {
         val gemini: ImageGenerator = mockk()
         val fallback: ImageGenerator = mockk()
         val providerConfig = ImageProviderConfig().apply { provider = "openai" }
+        val fallbackConfig = ImageFallbackConfig().apply { allowStubFallback = true }
         val expected =
             ImageGenerateResponse(
                 status = "completed",
@@ -32,7 +33,7 @@ class FallbackImageGeneratorTest {
         val openAiReq: CapturingSlot<ImageGenerateRequest> = slot()
         every { openAi.generate(capture(openAiReq)) } returns expected
 
-        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig)
+        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig, fallbackConfig)
         val actual = generator.generate(req)
 
         assertEquals(expected, actual)
@@ -48,6 +49,7 @@ class FallbackImageGeneratorTest {
         val gemini: ImageGenerator = mockk()
         val fallback: ImageGenerator = mockk()
         val providerConfig = ImageProviderConfig().apply { provider = "nano-banana" }
+        val fallbackConfig = ImageFallbackConfig().apply { allowStubFallback = true }
         val expected =
             ImageGenerateResponse(
                 status = "completed",
@@ -60,7 +62,7 @@ class FallbackImageGeneratorTest {
         val geminiReq: CapturingSlot<ImageGenerateRequest> = slot()
         every { gemini.generate(capture(geminiReq)) } returns expected
 
-        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig)
+        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig, fallbackConfig)
         val actual = generator.generate(req)
 
         assertEquals(expected, actual)
@@ -76,6 +78,7 @@ class FallbackImageGeneratorTest {
         val gemini: ImageGenerator = mockk()
         val fallback: ImageGenerator = mockk()
         val providerConfig = ImageProviderConfig().apply { provider = "gemini" }
+        val fallbackConfig = ImageFallbackConfig().apply { allowStubFallback = true }
         val expected =
             ImageGenerateResponse(
                 status = "completed",
@@ -88,7 +91,7 @@ class FallbackImageGeneratorTest {
         every { gemini.generate(any()) } throws ImageGenerationTimeoutError("timeout")
         every { fallback.generate(req) } returns expected
 
-        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig)
+        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig, fallbackConfig)
         val actual = generator.generate(req)
 
         assertEquals(expected, actual)
@@ -104,6 +107,7 @@ class FallbackImageGeneratorTest {
         val gemini: ImageGenerator = mockk()
         val fallback: ImageGenerator = mockk()
         val providerConfig = ImageProviderConfig().apply { provider = "openai" }
+        val fallbackConfig = ImageFallbackConfig().apply { allowStubFallback = true }
         val expected =
             ImageGenerateResponse(
                 status = "completed",
@@ -116,12 +120,29 @@ class FallbackImageGeneratorTest {
         val geminiReq: CapturingSlot<ImageGenerateRequest> = slot()
         every { gemini.generate(capture(geminiReq)) } returns expected
 
-        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig)
+        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig, fallbackConfig)
         val actual = generator.generate(req.copy(provider = "gemini"))
 
         assertEquals(expected, actual)
         assertEquals("gemini", geminiReq.captured.provider)
         verify(exactly = 0) { openAi.generate(any()) }
         verify(exactly = 1) { gemini.generate(any()) }
+    }
+
+    @Test
+    fun `throws primary error when fallback disabled`() {
+        val openAi: ImageGenerator = mockk()
+        val gemini: ImageGenerator = mockk()
+        val fallback: ImageGenerator = mockk()
+        val providerConfig = ImageProviderConfig().apply { provider = "openai" }
+        val fallbackConfig = ImageFallbackConfig().apply { allowStubFallback = false }
+        every { openAi.generate(any()) } throws ImageGenerationTimeoutError("timeout")
+
+        val generator = FallbackImageGenerator(openAi, gemini, fallback, providerConfig, fallbackConfig)
+
+        org.junit.jupiter.api.assertThrows<ImageGenerationTimeoutError> {
+            generator.generate(req)
+        }
+        verify(exactly = 0) { fallback.generate(any()) }
     }
 }

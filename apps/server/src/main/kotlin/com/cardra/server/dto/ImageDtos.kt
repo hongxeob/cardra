@@ -1,10 +1,15 @@
 package com.cardra.server.dto
 
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 
 data class ImageGenerateRequest(
     @field:NotBlank
     val prompt: String,
+    @field:Pattern(
+        regexp = "^\\d{2,4}x\\d{2,4}$",
+        message = "must match <width>x<height> (for example 1024x1024)",
+    )
     val size: String = "1024x1024",
     val provider: String? = null,
 )

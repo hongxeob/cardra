@@ -2,6 +2,7 @@ package com.cardra.server.dto
 
 import com.cardra.server.domain.CardStatus
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 import java.time.Instant
 import java.util.UUID
 
@@ -9,6 +10,8 @@ data class CreateCardRequest(
     @field:NotBlank
     val keyword: String,
     val tone: String = "neutral",
+    @field:Pattern(regexp = "^(quick|deep)$", message = "mode must be one of: quick, deep")
+    val mode: String = "quick",
 )
 
 data class CardResponse(

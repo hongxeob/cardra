@@ -3,6 +3,9 @@ import type {
   ApiErrorShape,
   CardResponse,
   CreateCardRequest,
+  ImageGenerateRequest,
+  ImageGenerateResponse,
+  ImageProviderStatusResponse,
   RecommendEvent,
   RecommendEventRequest,
   RecommendEventResponse,
@@ -41,6 +44,11 @@ export const healthApi = {
 
 export const uiApi = {
   contracts: () => api.get<UiContractsResponse>('/ui/contracts'),
+}
+
+export const imageApi = {
+  generate: (body: ImageGenerateRequest) => api.post<ImageGenerateResponse>('/images/generate', body),
+  providerStatus: () => api.get<ImageProviderStatusResponse>('/images/providers/status'),
 }
 
 export function parseApiError(payload: unknown): ApiErrorShape {

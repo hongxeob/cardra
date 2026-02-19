@@ -14,6 +14,11 @@ spring:
   sql:
     init:
       mode: never
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
 server:
   port: ${SERVER_PORT:9999}
 app:
@@ -26,6 +31,7 @@ cardra:
       timeout-seconds: 6
       endpoint: ""
   research:
+    allow-stub-fallback: ${CARDRA_RESEARCH_ALLOW_STUB_FALLBACK:true}
     openai:
       enabled: ${CARDRA_RESEARCH_OPENAI_ENABLED:false}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
@@ -38,6 +44,7 @@ cardra:
       endpoint: ""
   image:
     provider: ${CARDRA_IMAGE_PROVIDER:openai}
+    allow-stub-fallback: ${CARDRA_IMAGE_ALLOW_STUB_FALLBACK:true}
     openai:
       enabled: ${CARDRA_IMAGE_OPENAI_ENABLED:false}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}

@@ -101,6 +101,17 @@ class ImageControllerTest {
     }
 
     @Test
+    fun `generate image validation fail when size format is invalid`() {
+        mvc.perform(
+            post("/api/v1/images/generate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"prompt\":\"hello\",\"size\":\"square\"}"),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+    }
+
+    @Test
     fun `generate image returns bad request on unsupported provider`() {
         every { service.generate(any()) } throws IllegalArgumentException("provider must be one of: openai, gemini, nano-banana")
 

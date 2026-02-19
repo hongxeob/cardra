@@ -24,9 +24,15 @@ type QuickAction = {
   icon?: string
 }
 
-const routeByApiPath: Record<string, QuickAction> = {
-  '/api/v1/cards/generate': { key: 'cards-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
-  '/api/v1/research/run': { key: 'research-run', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
+const routeByApiSignature: Record<string, QuickAction> = {
+  'POST /api/v1/cards/generate': { key: 'cards-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
+  'POST /api/v1/research/run': { key: 'research-run', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
+}
+
+const quickActionOrder = ['cards-create', 'research-run']
+
+function routeSignature(method: string, path: string) {
+  return `${method.toUpperCase()} ${path}`
 }
 
 export function HomePage() {
@@ -45,8 +51,16 @@ export function HomePage() {
 
     if (!contractData?.routes?.length) return defaultActions
 
-    const base = contractData.routes
-      .map((route) => routeByApiPath[route.path])
+    const matchedByKey = new Map<string, QuickAction>()
+    contractData.routes.forEach((route) => {
+      const action = routeByApiSignature[routeSignature(route.method, route.path)]
+      if (action && !matchedByKey.has(action.key)) {
+        matchedByKey.set(action.key, action)
+      }
+    })
+
+    const base = quickActionOrder
+      .map((key) => matchedByKey.get(key))
       .filter(Boolean) as QuickAction[]
 
     return base.length ? base : defaultActions

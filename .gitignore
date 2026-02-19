@@ -14,3 +14,8 @@ apps/web/*.log
 
 # Runtime
 *.log
+
+# Local secrets / env
+.env
+.env.*
+apps/server/src/main/resources/application-local.yml

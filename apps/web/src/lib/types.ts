@@ -42,6 +42,7 @@ export type CardResponse = {
 export type CreateCardRequest = {
   keyword: string
   tone?: string
+  mode?: 'quick' | 'deep'
 }
 
 export type ResearchRunRequest = {
@@ -169,6 +170,40 @@ export type ApiErrorShape = {
   message: string
   retryable: boolean
   retryAfter?: number
+  traceId?: string
+  time?: string
+}
+
+export type ImageProvider = 'openai' | 'gemini' | 'nano-banana'
+
+export type ImageGenerateRequest = {
+  prompt: string
+  size?: string
+  provider?: ImageProvider
+}
+
+export type ImageGenerateResponse = {
+  status: string
+  provider: string
+  model: string
+  mimeType: string
+  imageBase64?: string | null
+  imageUrl?: string | null
+  usedFallback: boolean
+}
+
+export type ImageProviderStatusItem = {
+  name: string
+  enabled: boolean
+  apiKeyConfigured: boolean
+  model: string
+  baseUrl: string
+  selected: boolean
+}
+
+export type ImageProviderStatusResponse = {
+  activeProvider: string
+  providers: ImageProviderStatusItem[]
 }
 
 export type RecommendKeywordRequest = {

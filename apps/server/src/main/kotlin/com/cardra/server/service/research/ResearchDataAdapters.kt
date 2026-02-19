@@ -53,12 +53,19 @@ class OpenAiResearchConfig {
     var temperature: Double = 0.2
 }
 
+@Component
+@ConfigurationProperties(prefix = "cardra.research")
+class ResearchFallbackConfig {
+    var allowStubFallback: Boolean = true
+}
+
 @Component("openAiResearchDataAdapter")
 class OpenAiResearchDataAdapter(
     private val config: OpenAiResearchConfig,
     private val objectMapper: ObjectMapper,
     restTemplateBuilder: RestTemplateBuilder,
 ) : ResearchDataAdapter {
+    private val logger = LoggerFactory.getLogger(OpenAiResearchDataAdapter::class.java)
     private val restTemplate: RestTemplate =
         restTemplateBuilder
             .connectTimeout(Duration.ofSeconds(config.timeoutSeconds))
@@ -78,6 +85,13 @@ class OpenAiResearchDataAdapter(
         if (config.model.isBlank()) {
             throw ExternalResearchSchemaError("OpenAI model is required when OpenAI research adapter is enabled")
         }
+        logger.info(
+            "research_openai_request: traceId={} keyword={} model={} maxItems={}",
+            traceId,
+            req.keyword,
+            config.model,
+            req.maxItems,
+        )
 
         val endpoint = "${config.baseUrl.trimEnd('/')}/v1/chat/completions"
         val requestBody =
@@ -108,8 +122,16 @@ class OpenAiResearchDataAdapter(
             try {
                 restTemplate.exchange(request, OpenAiChatResponse::class.java)
             } catch (e: RestClientResponseException) {
+                logger.warn(
+                    "research_openai_http_error: traceId={} status={} statusText={} body={}",
+                    traceId,
+                    e.statusCode.value(),
+                    e.statusText,
+                    e.responseBodyAsString.take(300),
+                )
                 throw mapHttpError(e)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error("research_openai_transport_error: traceId={}", traceId, e)
                 throw ExternalResearchTimeoutError("OpenAI research call failed")
             }
 
@@ -143,6 +165,12 @@ class OpenAiResearchDataAdapter(
         if (payload.summary == null) {
             throw ExternalResearchSchemaError("OpenAI response contains no summary")
         }
+        logger.info(
+            "research_openai_success: traceId={} items={} providerCalls={}",
+            traceId,
+            payload.items.size,
+            1,
+        )
 
         return ResearchDataPayload(
             items = payload.items,
@@ -309,6 +337,7 @@ class FallbackResearchDataAdapter(
     private val primary: ResearchDataAdapter,
     @Qualifier("stubResearchDataAdapter")
     private val fallback: ResearchDataAdapter,
+    private val fallbackConfig: ResearchFallbackConfig,
 ) : ResearchDataAdapter {
     private val logger = LoggerFactory.getLogger(FallbackResearchDataAdapter::class.java)
 
@@ -319,9 +348,17 @@ class FallbackResearchDataAdapter(
         return try {
             primary.fetch(req, traceId)
         } catch (e: ExternalResearchError) {
+            if (!fallbackConfig.allowStubFallback) {
+                logger.warn("research_fallback_disabled: keyword={} reason={}", req.keyword, e::class.simpleName)
+                throw e
+            }
             logger.warn("research_fallback_used: keyword={} reason={}", req.keyword, e::class.simpleName)
             fallback.fetch(req, traceId)
         } catch (e: Exception) {
+            if (!fallbackConfig.allowStubFallback) {
+                logger.warn("research_fallback_disabled: keyword={} reason=UNKNOWN", req.keyword)
+                throw ExternalResearchUpstreamError("Research fetch failed unexpectedly")
+            }
             logger.warn("research_fallback_used: keyword={} reason={}", req.keyword, "UNKNOWN")
             fallback.fetch(req, traceId)
         }

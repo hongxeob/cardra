@@ -9,6 +9,8 @@ import com.cardra.server.dto.ResearchRunRequest
 import com.cardra.server.dto.ResearchRunResponse
 import com.cardra.server.service.research.ResearchJobService
 import com.cardra.server.service.research.ResearchService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,11 +24,13 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1/research")
+@Tag(name = "Research", description = "Research execution and job lifecycle APIs")
 class ResearchController(
     private val researchService: ResearchService,
     private val jobService: ResearchJobService,
 ) {
     @PostMapping("/run")
+    @Operation(summary = "Run research", description = "Execute synchronous research request")
     fun run(
         @Valid @RequestBody req: ResearchRunRequest,
     ): ResearchRunResponse {
@@ -34,6 +38,7 @@ class ResearchController(
     }
 
     @PostMapping("/jobs")
+    @Operation(summary = "Create research job", description = "Create asynchronous research job")
     fun createJob(
         @Valid @RequestBody req: ResearchJobCreateRequest,
     ): ResponseEntity<ResearchJobCreateResponse> {
@@ -42,6 +47,7 @@ class ResearchController(
     }
 
     @GetMapping("/jobs/{jobId}")
+    @Operation(summary = "Get research job status", description = "Fetch asynchronous research job status")
     fun getJobStatus(
         @PathVariable jobId: String,
     ): ResearchJobStatusResponse {
@@ -49,6 +55,7 @@ class ResearchController(
     }
 
     @GetMapping("/jobs/{jobId}/result")
+    @Operation(summary = "Get research job result", description = "Fetch asynchronous research job result")
     fun getResult(
         @PathVariable jobId: String,
     ): ResearchJobResultResponse {
@@ -56,6 +63,7 @@ class ResearchController(
     }
 
     @PostMapping("/jobs/{jobId}/cancel")
+    @Operation(summary = "Cancel research job", description = "Cancel asynchronous research job")
     fun cancelJob(
         @PathVariable jobId: String,
     ): ResponseEntity<ResearchJobCancelResponse> {

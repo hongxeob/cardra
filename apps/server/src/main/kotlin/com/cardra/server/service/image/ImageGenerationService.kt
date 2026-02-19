@@ -52,6 +52,12 @@ class ImageProviderConfig {
 }
 
 @Component
+@ConfigurationProperties(prefix = "cardra.image")
+class ImageFallbackConfig {
+    var allowStubFallback: Boolean = true
+}
+
+@Component
 @ConfigurationProperties(prefix = "cardra.image.openai")
 class OpenAiImageConfig {
     var enabled: Boolean = false
@@ -76,6 +82,7 @@ class OpenAiImageGenerator(
     private val config: OpenAiImageConfig,
     restTemplateBuilder: RestTemplateBuilder,
 ) : ImageGenerator {
+    private val logger = LoggerFactory.getLogger(OpenAiImageGenerator::class.java)
     private val restTemplate: RestTemplate =
         restTemplateBuilder
             .connectTimeout(Duration.ofSeconds(config.timeoutSeconds))
@@ -92,6 +99,12 @@ class OpenAiImageGenerator(
         if (config.model.isBlank()) {
             throw ImageGenerationSchemaError("OpenAI image model is required when enabled")
         }
+        logger.info(
+            "image_openai_request: model={} size={} promptLength={}",
+            config.model,
+            req.size,
+            req.prompt.trim().length,
+        )
 
         val endpoint = "${config.baseUrl.trimEnd('/')}/v1/images/generations"
         val request =
@@ -104,7 +117,6 @@ class OpenAiImageGenerator(
                         "model" to config.model,
                         "prompt" to req.prompt.trim(),
                         "size" to req.size,
-                        "response_format" to "b64_json",
                     ),
                 )
 
@@ -112,8 +124,15 @@ class OpenAiImageGenerator(
             try {
                 restTemplate.exchange(request, OpenAiImageResponse::class.java)
             } catch (e: RestClientResponseException) {
+                logger.warn(
+                    "image_openai_http_error: status={} statusText={} body={}",
+                    e.statusCode.value(),
+                    e.statusText,
+                    e.responseBodyAsString.take(300),
+                )
                 throw mapHttpError(e)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error("image_openai_transport_error", e)
                 throw ImageGenerationTimeoutError("OpenAI image generation failed")
             }
 
@@ -129,6 +148,12 @@ class OpenAiImageGenerator(
         if (base64 == null && url == null) {
             throw ImageGenerationSchemaError("OpenAI image response has no b64_json or url")
         }
+        logger.info(
+            "image_openai_success: model={} hasBase64={} hasUrl={}",
+            config.model,
+            base64 != null,
+            url != null,
+        )
 
         return ImageGenerateResponse(
             status = "completed",
@@ -159,6 +184,7 @@ class GeminiImageGenerator(
     private val config: GeminiImageConfig,
     restTemplateBuilder: RestTemplateBuilder,
 ) : ImageGenerator {
+    private val logger = LoggerFactory.getLogger(GeminiImageGenerator::class.java)
     private val restTemplate: RestTemplate =
         restTemplateBuilder
             .connectTimeout(Duration.ofSeconds(config.timeoutSeconds))
@@ -200,8 +226,15 @@ class GeminiImageGenerator(
             try {
                 restTemplate.exchange(request, GeminiGenerateContentResponse::class.java)
             } catch (e: RestClientResponseException) {
+                logger.warn(
+                    "image_gemini_http_error: status={} statusText={} body={}",
+                    e.statusCode.value(),
+                    e.statusText,
+                    e.responseBodyAsString.take(300),
+                )
                 throw mapHttpError(e)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.error("image_gemini_transport_error", e)
                 throw ImageGenerationTimeoutError("Gemini image generation failed")
             }
 
@@ -265,6 +298,7 @@ class FallbackImageGenerator(
     @Qualifier("stubImageGenerator")
     private val fallback: ImageGenerator,
     private val providerConfig: ImageProviderConfig,
+    private val fallbackConfig: ImageFallbackConfig,
 ) : ImageGenerator {
     private val logger = LoggerFactory.getLogger(FallbackImageGenerator::class.java)
 
@@ -284,9 +318,17 @@ class FallbackImageGenerator(
         return try {
             primary.generate(req.copy(provider = provider))
         } catch (e: ImageGenerationError) {
+            if (!fallbackConfig.allowStubFallback) {
+                logger.warn("image_fallback_disabled: provider={} reason={}", provider, e::class.simpleName)
+                throw e
+            }
             logger.warn("image_fallback_used: provider={} reason={} prompt={}", provider, e::class.simpleName, req.prompt)
             fallback.generate(req)
         } catch (e: Exception) {
+            if (!fallbackConfig.allowStubFallback) {
+                logger.warn("image_fallback_disabled: provider={} reason=UNKNOWN", provider)
+                throw ImageGenerationUpstreamError("Image generation failed unexpectedly")
+            }
             logger.warn("image_fallback_used: provider={} reason=UNKNOWN prompt={}", provider, req.prompt)
             fallback.generate(req)
         }
