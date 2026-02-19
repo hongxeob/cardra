@@ -9,6 +9,7 @@ import com.cardra.server.dto.RecommendKeywordResponse
 import com.cardra.server.dto.RecommendStrategy
 import org.springframework.stereotype.Service
 import java.time.Instant
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -35,6 +36,11 @@ class RecommendationService {
         val prefix = req.currentQuery?.trim().orEmpty()
         val categorySafe = req.categoryId?.trim().takeUnless { it.isNullOrBlank() } ?: "일반"
         val limit = req.limit.coerceIn(1, 20)
+        val excludes =
+            req.excludeKeywords
+                .map { it.trim().lowercase() }
+                .filter { it.isNotBlank() }
+                .toSet()
 
         val candidates =
             generateSequence {
@@ -65,7 +71,8 @@ class RecommendationService {
                     )
                 }
                 .filter { c ->
-                    req.excludeKeywords.none { c.keyword.contains(it, ignoreCase = true) } &&
+                    val normalized = c.keyword.lowercase()
+                    excludes.none { blocked -> normalized.contains(blocked) } &&
                         c.keyword.isNotBlank()
                 }
                 .toList()
@@ -85,7 +92,8 @@ class RecommendationService {
     }
 
     fun ingestEvents(req: RecommendEventRequest): RecommendEventResponse {
-        val stored = userHistory.getOrPut(req.userId) { mutableListOf() }
+        val stored = userHistory.getOrPut(req.userId) { Collections.synchronizedList(mutableListOf()) }
+
         var accepted = 0
         var failed = 0
 
@@ -97,10 +105,8 @@ class RecommendationService {
             }
 
             stored.add(keyword)
-            if (stored.size > maxHistory) {
-                while (stored.size > maxHistory) {
-                    stored.removeAt(0)
-                }
+            while (stored.size > maxHistory) {
+                stored.removeAt(0)
             }
             accepted += 1
         }
