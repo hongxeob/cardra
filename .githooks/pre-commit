@@ -6,6 +6,9 @@ set -o pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR/apps/server"
 
-echo "[pre-commit] Running ktlintCheck..."
-./gradlew ktlintCheck
+if [ -n "${JAVA_HOME:-}" ]; then
+  echo "[pre-commit] Using JAVA_HOME=$JAVA_HOME"
+fi
 
+echo "[pre-commit] Running ktlintCheck with Java 21 check..."
+./gradlew ktlintCheck

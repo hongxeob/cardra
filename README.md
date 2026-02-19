@@ -46,3 +46,16 @@ cd /Users/hongxeob/Desktop/project/cardra
 ```
 
 이후 pre-commit, pre-push에서 `ktlintCheck`가 강제됩니다.
+
+## Java/Gradle 기준
+
+- 본 프로젝트 서버는 **JDK 21 + ktlint + Gradle** 기준입니다.
+- `apps/server/gradlew` 실행 시 Java 21 환경을 자동 확인/강제합니다.
+- 수동 실행 예시:
+
+```bash
+cd apps/server
+export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+./gradlew -version
+./gradlew test
+```

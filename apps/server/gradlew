@@ -1,3 +1,50 @@
 #!/usr/bin/env sh
-# Gradle wrapper script placeholder. Use system gradle for this repo.
+set -eu
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+resolve_java_home() {
+  if [ -n "${JAVA_HOME:-}" ] && [ -x "${JAVA_HOME}/bin/java" ]; then
+    cur="$(${JAVA_HOME}/bin/java -version 2>&1 | sed -n 's/.*"\([0-9][0-9]*\).*/\1/p' | head -n 1)"
+    if [ "$cur" = "21" ]; then
+      echo "$JAVA_HOME"
+      return
+    fi
+  fi
+
+  if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+    jh="$(/usr/libexec/java_home -v 21 2>/dev/null || true)"
+    if [ -n "$jh" ] && [ -x "$jh/bin/java" ]; then
+      echo "$jh"
+      return
+    fi
+  fi
+
+  if command -v java >/dev/null 2>&1; then
+    cur="$(java -version 2>&1 | sed -n 's/.*"\([0-9][0-9]*\).*/\1/p' | head -n 1)"
+    if [ "$cur" != "21" ]; then
+      echo "ERROR: Java 21 is required. Current Java: ${cur:-unknown}." >&2
+      echo "Set JAVA_HOME to JDK 21 and rerun (e.g., export JAVA_HOME=\"/path/to/jdk-21\" )." >&2
+      exit 1
+    fi
+  else
+    echo "ERROR: java not found. Install JDK 21 and set JAVA_HOME." >&2
+    exit 1
+  fi
+}
+
+JAVA_HOME="$(resolve_java_home)"
+export JAVA_HOME
+export PATH="$JAVA_HOME/bin:$PATH"
+
+WRAPPER_JAR="$ROOT_DIR/gradle/wrapper/gradle-wrapper.jar"
+if [ -f "$WRAPPER_JAR" ]; then
+  exec java -cp "$WRAPPER_JAR" org.gradle.wrapper.GradleWrapperMain "$@"
+fi
+
+if ! command -v gradle >/dev/null 2>&1; then
+  echo "ERROR: gradle command not found." >&2
+  exit 1
+fi
+
 exec gradle "$@"
