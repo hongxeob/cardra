@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Gradle wrapper script placeholder. Use system gradle for this repo.
+exec gradle "$@"

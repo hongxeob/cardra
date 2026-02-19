@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cardra
+    username: cardra_user
+    password: cardra_pw
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  sql:
+    init:
+      mode: never
+server:
+  port: 8080
+app:
+  card:
+    max-source-links: 3

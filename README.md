@@ -13,11 +13,6 @@ Cardra는 키워드 기반 트렌드 카드뉴스 자동 생성 프로젝트입�
 - `.gemini/` : 리서치/디자인 지침
 - `.agent-policies/` : 에이전트 라우팅/변경 규칙
 
-## 개발 시작
-
-- 에이전트 우선순위: PM/총괄(Codex) → 리서치/디자인(Gemini) → 실행(Codex)
-- 출력 형식: 카드뉴스 2~3장, 카드당 120~180자
-
 ## 서버 스펙
 
 - **Backend:** Spring Boot (Kotlin)
@@ -25,5 +20,24 @@ Cardra는 키워드 기반 트렌드 카드뉴스 자동 생성 프로젝트입�
 - **Database:** PostgreSQL
 - 실행 앱 위치: `apps/server/`
 
-## 참조
-- Obsidian 아이디어 패키지에서 cardra 컨셉/브레인스토밍을 기반으로 진행
+## 개발 시작
+
+- 에이전트 우선순위: PM/총괄(Codex) → 리서치/디자인(Gemini) → 실행(Codex)
+- 출력 형식: 카드뉴스 2~3장, 카드당 120~180자
+
+## 운영 스크립트
+
+```bash
+cd infra
+
+docker compose up -d
+
+cd ../apps/server
+./gradlew bootRun
+```
+
+## 현재 진행
+
+- MCP: 서버 뼈대 완료
+- 다음: 영구 캐시 정책/출처 필터/에이전트 호출 어댑터 붙이기
+EOF
