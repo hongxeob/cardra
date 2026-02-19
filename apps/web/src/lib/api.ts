@@ -13,6 +13,7 @@ import type {
   ResearchJobResultResponse,
   ResearchJobStatusResponse,
   ResearchRunRequest,
+  UiContractsResponse,
 } from './types'
 
 export const cardApi = {
@@ -36,6 +37,10 @@ export const recommendApi = {
 
 export const healthApi = {
   ping: () => api.get('/health'),
+}
+
+export const uiApi = {
+  contracts: () => api.get<UiContractsResponse>('/ui/contracts'),
 }
 
 export function parseApiError(payload: unknown): ApiErrorShape {

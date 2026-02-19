@@ -215,3 +215,23 @@ export type RecommendEventResponse = {
   accepted: number
   failed: number
 }
+
+export type UiRouteInfo = {
+  feature: string
+  method: string
+  path: string
+  description: string
+}
+
+export type UiTheme = {
+  mainColor: string
+  subColor: string
+  background: string
+  textPrimary: string
+  textSecondary: string
+}
+
+export type UiContractsResponse = {
+  theme: UiTheme
+  routes: UiRouteInfo[]
+}
