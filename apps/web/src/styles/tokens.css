@@ -1,21 +1,27 @@
 :root {
   --color-main: #00A676;
-  --color-sub: #E0D0C1;
-  --color-bg: #f4f9f7;
+  --color-main-pressed: #008f65;
+  --color-sub: #e0d0c1;
+  --color-bg: #f8faf9;
   --color-surface: #ffffff;
-  --color-text: #0f172a;
+  --color-text: #1a1a1a;
   --color-text-muted: #4b5563;
-  --color-border: #dbe5df;
+  --color-border: #e2e8e5;
   --color-error: #dc2626;
   --color-success: #16a34a;
   --color-warning: #d97706;
+  --color-error-bg: #fef2f2;
 
   --font-sans: Pretendard, SUIT, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
   --space-md: 12px;
   --space-lg: 20px;
 
-  --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 8px 24px rgba(0, 166, 118, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --touch-target: 48px;
+
+  --ratio-square: 1 / 1;
+  --ratio-portrait: 4 / 5;
 }

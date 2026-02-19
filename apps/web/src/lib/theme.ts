@@ -1,11 +1,11 @@
 export const defaultTheme = {
   '--color-main': '#00A676',
   '--color-sub': '#E0D0C1',
-  '--color-bg': '#f8faf9',
-  '--color-surface': '#ffffff',
-  '--color-text': '#0f172a',
-  '--color-text-muted': '#334155',
-  '--color-border': '#e5e7eb',
+  '--color-bg': '#F8FAF9',
+  '--color-surface': '#FFFFFF',
+  '--color-text': '#1A1A1A',
+  '--color-text-muted': '#4B5563',
+  '--color-border': '#E2E8E5',
   '--card-accent': '#E0D0C1',
 }
 
