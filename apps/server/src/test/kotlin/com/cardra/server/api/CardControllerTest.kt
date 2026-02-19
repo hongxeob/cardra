@@ -3,11 +3,10 @@ package com.cardra.server.api
 import com.cardra.server.domain.CardStatus
 import com.cardra.server.dto.CardItem
 import com.cardra.server.dto.CardResponse
-import com.cardra.server.dto.CreateCardRequest
 import com.cardra.server.service.CardService
+import io.mockk.any
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.any
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -32,13 +31,13 @@ class CardControllerTest {
             cards = listOf(
                 CardItem(
                     title = "AI 지금 왜 중요한가?",
-                    body = "AI 관련 이슈는 단기 반응보다 누적 신호를 같이 볼 때 판단 정확도가 높아집니다. 정책·가격·수요 신호를 함께 결합해 보아야 합니다.",
+                    body = "AI 관련 이슈는 단기 반응보다 누적 신호를 같이 볼 때 판단 정확도가 높아집니다. 정책, 가격, 수요 신호를 함께 결합해 보아야 합니다.",
                     source = listOf("agent://research", "agent://analysis"),
                     sourceAt = "2026-02-19T00:00:00Z"
                 ),
                 CardItem(
                     title = "AI 체크 포인트",
-                    body = "단기 유입·장기 성장성의 분리점을 같이 기록하면 오판단을 줄일 수 있습니다. 가격 신호와 운영 지표를 함께 추적하면서 결정을 설계하면 품질이 올라갑니다.",
+                    body = "단기 유입과 장기 성장성의 분리점을 같이 기록하면 오판단을 줄일 수 있습니다. 가격 신호와 운영 지표를 함께 추적하면서 결정을 설계하면 품질이 올라갑니다.",
                     source = listOf("agent://analysis", "agent://editor"),
                     sourceAt = "2026-02-19T00:00:00Z"
                 ),
@@ -63,6 +62,33 @@ class CardControllerTest {
             .andExpect(status().isAccepted)
             .andExpect(jsonPath("$.keyword").value("AI"))
             .andExpect(jsonPath("$.cards.length()").value(3))
+    }
+
+    @Test
+    fun `get card returns ok payload`() {
+        val response = CardResponse(
+            id = UUID.fromString("11111111-1111-1111-1111-111111111111"),
+            keyword = "AI",
+            cards = listOf(
+                CardItem(
+                    title = "카드 1",
+                    body = "테스트 카드 본문 예시 입니다. 실제 서비스에서는 여러 소스를 병합해 최신성 위주의 요약을 제공합니다.",
+                    source = listOf("agent://system"),
+                    sourceAt = "2026-02-19T00:00:00Z"
+                )
+            ),
+            status = CardStatus.COMPLETED,
+            createdAt = Instant.parse("2026-02-19T00:00:00Z")
+        )
+
+        every { service.getCard(UUID.fromString("11111111-1111-1111-1111-111111111111")) } returns response
+
+        mvc.perform(
+            get("/api/v1/cards/11111111-1111-1111-1111-111111111111")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.id").value("11111111-1111-1111-1111-111111111111"))
+            .andExpect(jsonPath("$.cards.length()").value(1))
     }
 
     @Test
