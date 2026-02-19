@@ -63,3 +63,41 @@ export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
 ## 다음 프로세스 진행 상태
 - 외부 에이전트(리서치/작성/디자인)는 `service.agent` 인터페이스로 추상화해 교체 가능한 구조로 정리
 - 현재는 Mock 기반 3장 카드 생성 파이프라인을 기본 운영하고, 차후 실제 API 클라이언트로 대체 예정
+
+## OMX (oh-my-codex) 최소 도입 가이드
+
+Codex CLI 병렬/멀티에이전트 보조 오케스트레이션을 위해 `omx`를 사용할 수 있습니다.
+
+### 1) 설치 (현재 환경 기준)
+```bash
+npm install -g oh-my-codex
+```
+
+### 2) 설치 확인
+```bash
+./scripts/omx.sh --version
+./scripts/omx.sh doctor
+```
+
+### 3) 초기 설정 (Codex가 이미 로그인/설치된 경우)
+```bash
+./scripts/omx.sh setup      # 프롬프트/스킬/AGENTS 훅 스캐폴딩
+./scripts/omx.sh doctor      # 상태 재확인
+```
+
+### 4) 최소 사용 예
+- 빠른 병렬 분할 실행:
+  ```bash
+  ./scripts/omx.sh team 3:executor "cardra 연구/개선 항목을 병렬 점검해줘"
+  ./scripts/omx.sh team status
+  ./scripts/omx.sh team shutdown <team-name>
+  ```
+- Codex 시작 플래그 강화:
+  ```bash
+  ./scripts/omx.sh --high   # 고난도 추론 모드
+  ./scripts/omx.sh --xhigh  # 최대 추론 모드(신뢰 환경 권장)
+  ```
+
+> 주의: `--madmax`는 승인/샌드박스 우회 모드이므로 신뢰 환경에서만 사용하세요.
+
+- OpenClaw 연동 포인트: 필요 시 내가 OpenClaw `exec`에서 위 `./scripts/omx.sh ...` 명령을 호출해 팀 모드 실행/상태 조회/종료를 오케스트레이션해줄 수 있습니다.
