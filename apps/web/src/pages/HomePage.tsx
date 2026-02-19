@@ -4,10 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import { healthApi, uiApi } from '../lib/api'
 
 function HealthBadge({ health }: { health: 'ok' | 'bad' | 'loading' }) {
-  const label = health === 'ok' ? '정상' : health === 'bad' ? '점검 필요' : '체크중'
-  const tone = health === 'ok' ? 'primary' : health === 'bad' ? 'error' : 'muted'
+  const label = health === 'ok' ? 'SYSTEM OK' : health === 'bad' ? 'MAINTENANCE' : 'CHECKING'
+  const color = health === 'ok' ? 'var(--color-success)' : health === 'bad' ? 'var(--color-error)' : 'var(--color-text-muted)'
+  const bg = health === 'ok' ? 'var(--color-main-soft)' : health === 'bad' ? 'var(--color-error-bg)' : '#F3F4F6'
 
-  return <span className={`health-badge health-${tone}`}>{`시스템 ${label}`}</span>
+  return (
+    <span className="badge" style={{ background: bg, color: color, border: 'none', fontWeight: 700, letterSpacing: '0.05em' }}>
+      {label}
+    </span>
+  )
 }
 
 type QuickAction = {
@@ -15,17 +20,12 @@ type QuickAction = {
   to: string
   label: string
   detail: string
+  icon?: string
 }
 
 const routeByApiPath: Record<string, QuickAction> = {
-  '/api/v1/cards/generate': { key: 'cards-create', to: '/create', label: '카드 생성', detail: '카드 생성 페이지' },
-  '/api/v1/cards/{id}': { key: 'cards-detail', to: '/cards/sample', label: '카드 상세', detail: '최근 생성 카드로 이동(샘플)' },
-  '/api/v1/research/run': { key: 'research-run', to: '/create', label: '연구 실행', detail: '리서치 모드로 카드 생성' },
-  '/api/v1/research/jobs/{jobId}': { key: 'research-status', to: '/create', label: '리서치 상태', detail: '실행 후 상태 페이지(샘플)' },
-  '/api/v1/research/jobs/{jobId}/result': { key: 'research-result', to: '/create', label: '리서치 결과', detail: '연구 결과 페이지(샘플)' },
-  '/api/v1/research/jobs/{jobId}/cancel': { key: 'research-cancel', to: '/create', label: '리서치 취소', detail: '진행중 작업 취소' },
-  '/api/v1/recommend/keywords': { key: 'recommend', to: '/create', label: '키워드 추천', detail: '입력 기반 추천 받아보기' },
-  '/api/v1/recommend/events': { key: 'recommend-events', to: '/create', label: '이벤트 수집', detail: '추천 히스토리 반영' },
+  '/api/v1/cards/generate': { key: 'cards-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
+  '/api/v1/research/run': { key: 'research-run', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
 }
 
 export function HomePage() {
@@ -37,23 +37,18 @@ export function HomePage() {
   })
 
   const quickActions = useMemo<QuickAction[]>(() => {
-    if (!contractData?.routes?.length) {
-      return [
-        { key: 'default-create', to: '/create', label: '새 카드 만들기', detail: '키워드로 카드 생성하기' },
-        { key: 'default-research', to: '/create', label: '리서치 시작', detail: '키워드 기반 리서치 실행' },
-      ]
-    }
+    const defaultActions = [
+      { key: 'default-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
+      { key: 'default-research', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
+    ]
+
+    if (!contractData?.routes?.length) return defaultActions
 
     const base = contractData.routes
       .map((route) => routeByApiPath[route.path])
       .filter(Boolean) as QuickAction[]
 
-    if (base.length) return base
-
-    return [
-      { key: 'default-create', to: '/create', label: '새 카드 만들기', detail: '키워드로 카드 생성하기' },
-      { key: 'default-research', to: '/create', label: '리서치 시작', detail: '키워드 기반 리서치 실행' },
-    ]
+    return base.length ? base : defaultActions
   }, [contractData])
 
   const [health, setHealth] = useState<'ok' | 'bad' | 'loading'>('loading')
@@ -66,24 +61,56 @@ export function HomePage() {
   }, [])
 
   return (
-    <section>
+    <section style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <header className="home-hero">
-        <p className="home-eyebrow">AI 카드 추천 서비스</p>
+        <p className="home-eyebrow">Smart Content Orchestrator</p>
         <h1>Cardra</h1>
-        <p>키워드로 빠르게 카드뉴스를 만들고 리서치까지 바로 연결하세요.</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '18px', maxWidth: '320px', margin: '0 auto var(--space-lg)' }}>
+          당신의 아이디어를 임팩트 있는 <strong style={{ color: 'var(--color-main)' }}>카드 뉴스</strong>로 변환하세요.
+        </p>
         <HealthBadge health={health} />
       </header>
 
-      <div className="card home-actions">
+      <div className="home-actions" style={{ display: 'grid', gap: 'var(--space-md)' }}>
         {quickActions.map((action) => (
           <Link key={action.key} to={action.to} className="home-link">
-            <button className="primary" type="button">
-              <span>{action.label}</span>
-              <span className="home-action-detail">{action.detail}</span>
+            <button className="card" style={{ 
+              width: '100%', 
+              textAlign: 'left', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 'var(--space-md)',
+              padding: 'var(--space-lg)',
+              border: '2px solid transparent',
+            }}>
+              <span style={{ fontSize: '32px' }}>{action.icon}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800 }}>{action.label}</span>
+                <span className="muted">{action.detail}</span>
+              </div>
+              <span style={{ marginLeft: 'auto', color: 'var(--color-main)', fontWeight: 800 }}>→</span>
             </button>
           </Link>
         ))}
       </div>
+
+      <footer style={{ marginTop: 'var(--space-xl)', textAlign: 'center' }}>
+        <p className="muted" style={{ fontSize: '12px' }}>
+          Powered by Gemini Agent Engine
+        </p>
+      </footer>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .home-link .card:hover {
+          border-color: var(--color-main);
+          background: var(--color-main-soft);
+          transform: translateY(-2px);
+        }
+      `}</style>
     </section>
   )
 }

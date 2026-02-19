@@ -1,5 +1,7 @@
 package com.cardra.server.service.research
 
+import com.cardra.server.domain.ResearchJobEntity
+import com.cardra.server.domain.ResearchJobStatus
 import com.cardra.server.dto.ResearchJobCacheDto
 import com.cardra.server.dto.ResearchJobCancelResponse
 import com.cardra.server.dto.ResearchJobCreateRequest
@@ -11,167 +13,171 @@ import com.cardra.server.dto.ResearchRunRequest
 import com.cardra.server.dto.ResearchRunResponse
 import com.cardra.server.dto.ResearchUsageDto
 import com.cardra.server.exception.ResearchJobNotFoundException
+import com.cardra.server.repository.ResearchJobRepository
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 private const val CACHE_TTL_SEC = 180
 
-enum class ResearchJobStatus {
-    QUEUED,
-    RUNNING,
-    COMPLETED,
-    FAILED,
-    CANCELLED,
-}
-
-private data class ResearchJobState(
-    val request: ResearchJobCreateRequest,
-    val requestKey: String,
-    val traceId: String,
-    val createdAt: Instant,
-    var status: ResearchJobStatus,
-    var updatedAt: Instant,
-    var result: ResearchRunResponse? = null,
-    var error: ResearchJobErrorResponse? = null,
-    var future: Future<*>? = null,
-    var fromCache: Boolean = false,
-)
-
 @Service
 class ResearchJobService(
     private val researchService: ResearchService,
+    private val researchJobRepository: ResearchJobRepository,
+    private val objectMapper: ObjectMapper,
 ) {
-    private val jobs: ConcurrentMap<String, ResearchJobState> = ConcurrentHashMap()
-    private val idempotencyIndex: ConcurrentMap<String, String> = ConcurrentHashMap()
-    private val cache: ConcurrentMap<String, ResearchRunResponse> = ConcurrentHashMap()
     private val jobExecutor = Executors.newFixedThreadPool(2)
+    private val runningFutures = ConcurrentHashMap<String, Future<*>>()
 
     fun createJob(req: ResearchJobCreateRequest): ResearchJobCreateResponse {
-        val idempotencyKey = req.idempotencyKey?.trim().orEmpty()
+        val idempotencyKey = req.idempotencyKey?.trim()?.takeIf { it.isNotBlank() }
         val runRequest = req.toRunRequest()
         val requestKey = cacheKey(runRequest)
 
-        if (idempotencyKey.isNotBlank()) {
-            val replayJobId = idempotencyIndex[idempotencyKey]
-            if (replayJobId != null) {
-                val replay = jobs[replayJobId] ?: throw ResearchJobNotFoundException(replayJobId)
-                return ResearchJobCreateResponse(
-                    jobId = replayJobId,
-                    status = replay.status.name.lowercase(),
-                    traceId = replay.traceId,
-                )
+        if (idempotencyKey != null) {
+            researchJobRepository.findFirstByIdempotencyKeyOrderByCreatedAtDesc(idempotencyKey)?.let { replay ->
+                return replay.toCreateResponse()
             }
         }
 
-        val jobId = UUID.randomUUID().toString()
         val now = Instant.now()
         val traceId = UUID.randomUUID().toString()
 
-        val cachedResponse = cache[requestKey]
-        if (cachedResponse != null) {
-            val state =
-                ResearchJobState(
-                    request = req,
-                    requestKey = requestKey,
-                    traceId = traceId,
-                    createdAt = now,
-                    status = ResearchJobStatus.COMPLETED,
-                    updatedAt = now,
-                    result = cachedResponse,
-                    fromCache = true,
-                )
-            jobs[jobId] = state
-            cacheIndex(idempotencyKey, jobId)
-
-            return ResearchJobCreateResponse(
-                jobId = jobId,
-                status = state.status.name.lowercase(),
-                traceId = traceId,
+        val cachedJob =
+            researchJobRepository.findFirstByRequestKeyAndStatusOrderByUpdatedAtDesc(
+                requestKey,
+                ResearchJobStatus.COMPLETED,
             )
+
+        if (!cachedJob?.resultJson.isNullOrBlank()) {
+            val saved =
+                researchJobRepository.save(
+                    ResearchJobEntity(
+                        keyword = req.keyword,
+                        language = req.language,
+                        country = req.country,
+                        timeRange = req.timeRange,
+                        maxItems = req.maxItems,
+                        summaryLevel = req.summaryLevel,
+                        factcheckMode = req.factcheckMode,
+                        idempotencyKey = idempotencyKey,
+                        requestKey = requestKey,
+                        traceId = traceId,
+                        status = ResearchJobStatus.COMPLETED,
+                        resultJson = cachedJob?.resultJson,
+                        errorJson = null,
+                        fromCache = true,
+                        createdAt = now,
+                        updatedAt = now,
+                    ),
+                )
+            return saved.toCreateResponse()
         }
 
-        val state =
-            ResearchJobState(
-                request = req,
-                requestKey = requestKey,
-                traceId = traceId,
-                createdAt = now,
-                status = ResearchJobStatus.QUEUED,
-                updatedAt = now,
+        val saved =
+            researchJobRepository.save(
+                ResearchJobEntity(
+                    keyword = req.keyword,
+                    language = req.language,
+                    country = req.country,
+                    timeRange = req.timeRange,
+                    maxItems = req.maxItems,
+                    summaryLevel = req.summaryLevel,
+                    factcheckMode = req.factcheckMode,
+                    idempotencyKey = idempotencyKey,
+                    requestKey = requestKey,
+                    traceId = traceId,
+                    status = ResearchJobStatus.QUEUED,
+                    createdAt = now,
+                    updatedAt = now,
+                ),
             )
-        jobs[jobId] = state
 
-        state.future =
+        runningFutures[saved.id] =
             CompletableFuture.runAsync(
                 {
-                    runJob(jobId, runRequest, traceId, requestKey)
+                    runJob(saved.id, runRequest, traceId)
                 },
                 jobExecutor,
             )
 
-        cacheIndex(idempotencyKey, jobId)
-
-        return ResearchJobCreateResponse(
-            jobId = jobId,
-            status = state.status.name.lowercase(),
-            traceId = traceId,
-        )
+        return saved.toCreateResponse()
     }
 
     private fun runJob(
         jobId: String,
         req: ResearchRunRequest,
         traceId: String,
-        cacheKey: String,
     ) {
-        val state = jobs[jobId] ?: return
+        val state = researchJobRepository.findById(jobId).orElse(null) ?: return
+        if (state.status == ResearchJobStatus.CANCELLED) {
+            return
+        }
+
         state.status = ResearchJobStatus.RUNNING
         state.updatedAt = Instant.now()
+        researchJobRepository.save(state)
 
         try {
             Thread.sleep(20)
             val result = researchService.runResearch(req, traceId)
-            state.result = result.copy(usage = result.usage?.copy(cacheHit = false))
-            state.status = ResearchJobStatus.COMPLETED
-            cache[cacheKey] = result
+            val cancelled = researchJobRepository.findById(jobId).orElse(null)?.status == ResearchJobStatus.CANCELLED
+            if (cancelled) {
+                state.status = ResearchJobStatus.CANCELLED
+            } else {
+                state.resultJson =
+                    objectMapper.writeValueAsString(
+                        result.copy(
+                            usage = result.usage?.copy(cacheHit = false),
+                        ),
+                    )
+                state.errorJson = null
+                state.status = ResearchJobStatus.COMPLETED
+            }
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            state.status = ResearchJobStatus.CANCELLED
+            state.errorJson = null
         } catch (e: Exception) {
             val retryAfter = if (e is IllegalArgumentException) null else 5
             val retryable = retryAfter != null
 
-            state.error =
-                ResearchJobErrorResponse(
-                    code = "RESEARCH_JOB_FAILED",
-                    message = e.message ?: "Unexpected error",
-                    retryable = retryable,
-                    retryAfter = retryAfter,
-                    traceId = traceId,
-                    usage =
-                        ResearchUsageDto(
-                            providerCalls = 1,
-                            latencyMs = 0,
-                            cacheHit = false,
-                        ),
+            state.errorJson =
+                objectMapper.writeValueAsString(
+                    ResearchJobErrorResponse(
+                        code = "RESEARCH_JOB_FAILED",
+                        message = e.message ?: "Unexpected error",
+                        retryable = retryable,
+                        retryAfter = retryAfter,
+                        traceId = traceId,
+                        usage =
+                            ResearchUsageDto(
+                                providerCalls = 1,
+                                latencyMs = 0,
+                                cacheHit = false,
+                            ),
+                    ),
                 )
+            state.resultJson = null
             state.status = ResearchJobStatus.FAILED
         } finally {
             state.updatedAt = Instant.now()
+            researchJobRepository.save(state)
+            runningFutures.remove(jobId)
         }
     }
 
-    private fun cacheIndex(
-        key: String,
-        jobId: String,
-    ) {
-        if (key.isNotBlank()) {
-            idempotencyIndex[key] = jobId
-        }
-    }
+    private fun ResearchJobEntity.toCreateResponse(): ResearchJobCreateResponse =
+        ResearchJobCreateResponse(
+            jobId = id,
+            status = status.name.lowercase(),
+            traceId = traceId,
+        )
 
     private fun cacheKey(req: ResearchRunRequest): String {
         return "${req.keyword}|${req.language}|${req.country}|${req.timeRange}|${req.maxItems}|${req.summaryLevel}|${req.factcheckMode}"
@@ -189,19 +195,20 @@ class ResearchJobService(
         )
 
     fun getStatus(jobId: String): ResearchJobStatusResponse {
-        val state = jobs[jobId] ?: throw ResearchJobNotFoundException(jobId)
+        val state = researchJobRepository.findById(jobId).orElseThrow { ResearchJobNotFoundException(jobId) }
 
         return ResearchJobStatusResponse(
             jobId = jobId,
             status = state.status.name.lowercase(),
             createdAt = state.createdAt.toString(),
             updatedAt = state.updatedAt.toString(),
-            error = state.error,
+            error = parseError(state.errorJson),
         )
     }
 
     fun getResult(jobId: String): ResearchJobResultResponse {
-        val state = jobs[jobId] ?: throw ResearchJobNotFoundException(jobId)
+        val state = researchJobRepository.findById(jobId).orElseThrow { ResearchJobNotFoundException(jobId) }
+        val parsedResult = parseResult(state.resultJson)
 
         val cacheInfo =
             if (state.status == ResearchJobStatus.COMPLETED && state.fromCache) {
@@ -217,34 +224,54 @@ class ResearchJobService(
             jobId = jobId,
             status = state.status.name.lowercase(),
             result =
-                state.result?.copy(
+                parsedResult?.copy(
                     usage =
-                        state.result?.usage?.copy(
+                        parsedResult.usage?.copy(
                             cacheHit = state.fromCache,
                         ),
                 ),
-            error = state.error,
+            error = parseError(state.errorJson),
             cache = cacheInfo,
         )
     }
 
     fun cancelJob(jobId: String): ResearchJobCancelResponse {
-        val state = jobs[jobId] ?: throw ResearchJobNotFoundException(jobId)
+        val state = researchJobRepository.findById(jobId).orElseThrow { ResearchJobNotFoundException(jobId) }
         val current = state.status
 
+        val canCancel = current == ResearchJobStatus.QUEUED || current == ResearchJobStatus.RUNNING
         val cancelled =
-            (current == ResearchJobStatus.QUEUED || current == ResearchJobStatus.RUNNING) &&
-                (state.future?.cancel(true) ?: false)
-
-        if (cancelled) {
-            state.status = ResearchJobStatus.CANCELLED
-            state.updatedAt = Instant.now()
-        }
+            if (!canCancel) {
+                false
+            } else {
+                val cancelledInMemory = runningFutures[jobId]?.cancel(true) ?: true
+                if (cancelledInMemory) {
+                    state.status = ResearchJobStatus.CANCELLED
+                    state.updatedAt = Instant.now()
+                    researchJobRepository.save(state)
+                    runningFutures.remove(jobId)
+                }
+                cancelledInMemory
+            }
 
         return ResearchJobCancelResponse(
             jobId = jobId,
             status = state.status.name.lowercase(),
             cancelled = cancelled,
         )
+    }
+
+    private fun parseResult(json: String?): ResearchRunResponse? {
+        if (json.isNullOrBlank()) {
+            return null
+        }
+        return objectMapper.readValue(json, ResearchRunResponse::class.java)
+    }
+
+    private fun parseError(json: String?): ResearchJobErrorResponse? {
+        if (json.isNullOrBlank()) {
+            return null
+        }
+        return objectMapper.readValue(json, ResearchJobErrorResponse::class.java)
     }
 }

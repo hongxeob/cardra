@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { cardApi, recommendApi, researchApi } from '../lib/api'
 import { createRecommendEvent } from '../lib/api'
 import { toAppError } from '../lib/error'
@@ -12,9 +12,8 @@ const userId = 'local-user'
 
 export function CreatePage() {
   const [keyword, setKeyword] = useState('')
-  const [tone, setTone] = useState('neutral')
+  const [tone, setTone] = useState('minimal')
   const navigate = useNavigate()
-  const [message, setMessage] = useState('')
   const [researchMode, setResearchMode] = useState(false)
 
   const {
@@ -42,9 +41,6 @@ export function CreatePage() {
         events: [createRecommendEvent(keyword)],
       })
     },
-    onError: () => {
-      setMessage('카드 생성 요청을 처리하지 못했습니다.')
-    },
   })
 
   const researchMut = useMutation({
@@ -62,9 +58,7 @@ export function CreatePage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!keyword.trim()) {
-      return
-    }
+    if (!keyword.trim()) return
 
     cardMut.mutate()
     if (researchMode) {
@@ -72,30 +66,30 @@ export function CreatePage() {
     }
   }
 
-  const handleRetryCard = () => {
-    if (!cardMut.isPending) {
-      cardMut.mutate()
-    }
-  }
-
   const cardError = cardMut.error ? toAppError(cardMut.error as unknown) : null
 
   useEffect(() => {
-    if (!keyword) {
-      return
-    }
+    if (!keyword) return
     const t = window.setTimeout(() => {
       loadRecommendations()
     }, 500)
     return () => window.clearTimeout(t)
   }, [keyword, loadRecommendations])
 
-  const onPickRecommend = (next: string) => {
-    setKeyword(next)
-  }
-
-  if (cardMut.isPending) {
-    return <LoadingCard label="카드를 생성하고 있습니다." />
+  if (cardMut.isPending || (researchMode && researchMut.isPending)) {
+    return (
+      <div style={{ display: 'grid', gap: 'var(--space-md)', padding: 'var(--space-xl) 0' }}>
+        <LoadingCard label={researchMode ? '리서치 데이터를 수집하고 카드를 설계 중입니다...' : 'AI가 카드를 디자인하고 있습니다...'} />
+        <p className="muted" style={{ textAlign: 'center', animation: 'pulse 2s infinite' }}>잠시만 기다려주세요. 약 10-20초 정도 소요될 수 있습니다.</p>
+        <style>{`
+          @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+          }
+        `}</style>
+      </div>
+    )
   }
 
   if (cardError && !cardError.retryable) {
@@ -103,71 +97,92 @@ export function CreatePage() {
   }
 
   return (
-    <div>
-      <h2>카드 생성</h2>
+    <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+      <header style={{ marginBottom: 'var(--space-xl)' }}>
+        <button className="muted" onClick={() => navigate('/')} style={{ background: 'none', padding: 0, minHeight: 'auto', marginBottom: 'var(--space-md)' }}>
+          ← 뒤로 가기
+        </button>
+        <h2 style={{ fontSize: '32px' }}>콘텐츠 생성</h2>
+        <p className="muted">키워드를 입력하면 AI가 최적의 카드뉴스를 구성합니다.</p>
+      </header>
+
       <form onSubmit={handleSubmit} className="card-form">
         <div className="field">
-          <label>키워드</label>
-          <div className="row">
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="예: AI 트렌드"
-            />
-            {keyword && (
-              <button type="button" className="secondary" onClick={() => loadRecommendations()}>
-                추천 새로고침
-              </button>
+          <label>주제 및 키워드</label>
+          <input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="예: 2026 AI 트렌드, 건강한 식습관"
+            autoFocus
+          />
+        </div>
+
+        {keyword.length >= 2 && (
+          <div className="keyword-chips-section" style={{ marginBottom: 'var(--space-lg)' }}>
+            {isRecommendLoading ? (
+              <p className="muted" style={{ fontSize: '12px' }}>연관 키워드 탐색 중...</p>
+            ) : (
+              <KeywordChips
+                candidates={recommendData?.candidates ?? []}
+                onPick={(k) => setKeyword(k)}
+              />
             )}
           </div>
-        </div>
-        <div className="field">
-          <label>톤</label>
-          <input value={tone} onChange={(e) => setTone(e.target.value)} />
-        </div>
-
-        {isRecommendLoading ? (
-          <LoadingCard label="추천 키워드 조회 중..." />
-        ) : (
-          <KeywordChips
-            candidates={recommendData?.candidates ?? []}
-            onPick={onPickRecommend}
-          />
         )}
 
-        <label style={{ display: 'block', marginTop: 8 }}>
-          <input
-            type="checkbox"
-            checked={researchMode}
-            onChange={(e) => setResearchMode(e.target.checked)}
-          />
-          리서치 결과도 함께 실행
-        </label>
-
-        <div className="row" style={{ marginTop: 12 }}>
-          <button className="primary" type="submit" disabled={cardMut.isPending}>
-            {cardMut.isPending ? '생성중...' : '생성'}
-          </button>
-          <Link to="/">
-            <button type="button" className="secondary">
-              취소
-            </button>
-          </Link>
-          {cardError && cardError.retryable ? (
-            <button className="secondary" type="button" onClick={handleRetryCard}>
-              다시 시도
-            </button>
-          ) : null}
+        <div className="field">
+          <label>스타일 톤</label>
+          <div className="row" style={{ gap: 'var(--space-sm)' }}>
+            {['minimal', 'professional', 'cheerful', 'cyberpunk'].map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={tone === t ? 'primary' : 'secondary'}
+                style={{ 
+                  flex: 1, 
+                  fontSize: '14px', 
+                  minHeight: '40px',
+                  background: tone === t ? 'var(--color-main)' : 'var(--color-bg)',
+                  border: tone === t ? 'none' : '1px solid var(--color-border)',
+                  color: tone === t ? '#fff' : 'var(--color-text)'
+                }}
+                onClick={() => setTone(t)}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
-        {message ? <p className="error">{message}</p> : null}
-        {cardError ? (
-          <p className="muted">
-            {cardError.retryable && cardError.retryAfter
-              ? `${cardError.retryAfter}초 뒤 재시도 가능`
-              : ''}
-          </p>
-        ) : null}
+
+        <div className="card" style={{ background: 'var(--color-sub-soft)', border: 'none', margin: 'var(--space-md) 0' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              style={{ width: '20px', height: '20px' }}
+              checked={researchMode}
+              onChange={(e) => setResearchMode(e.target.checked)}
+            />
+            <div>
+              <strong style={{ display: 'block', fontSize: '15px' }}>딥 리서치 모드 활성화</strong>
+              <span className="muted" style={{ fontSize: '12px' }}>웹상의 실시간 데이터를 분석하여 더 정확한 근거를 포함합니다.</span>
+            </div>
+          </label>
+        </div>
+
+        <div style={{ marginTop: 'var(--space-xl)' }}>
+          <button className="primary" type="submit" style={{ width: '100%', height: '56px', fontSize: '18px' }} disabled={!keyword.trim()}>
+            AI 카드 생성하기
+          </button>
+        </div>
       </form>
+      
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+      
     </div>
   )
 }

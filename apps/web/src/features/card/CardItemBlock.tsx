@@ -8,11 +8,18 @@ function containerClass(item: CardItem) {
 }
 
 export function CardItemBlock({ item }: { item: CardItem }) {
-  const style = item.style
+  const { media, cta, tags, source, sourceAt } = item
 
   return (
-    <article className={containerClass(item)}>
+    <article className={containerClass(item)} style={{ position: 'relative' }}>
       <header>
+        {tags?.length ? (
+          <div className="chips-wrap" style={{ marginBottom: 'var(--space-sm)' }}>
+            <span className="badge" style={{ background: 'var(--color-main-soft)', color: 'var(--color-main)', border: 'none', fontWeight: 800 }}>
+              {tags[0].toUpperCase()}
+            </span>
+          </div>
+        ) : null}
         <h3 className="card-title">{item.title}</h3>
       </header>
 
@@ -20,46 +27,47 @@ export function CardItemBlock({ item }: { item: CardItem }) {
         <p>{item.body}</p>
       </section>
 
-      {style ? (
-        <p className="muted" aria-label="card style info">
-          {style.tone} / {style.layout} / {style.emphasis}
-        </p>
-      ) : null}
-
-      {item.media?.imageUrl ? (
+      {media?.imageUrl ? (
         <figure className="card__media" role="presentation">
-          <img src={item.media.imageUrl} alt={item.media.altText || item.title} />
+          <img src={media.imageUrl} alt={media.altText || item.title} />
         </figure>
       ) : (
-        item.imageHint && <p className="muted">이미지 힌트: {item.imageHint}</p>
+        item.imageHint && (
+          <div className="card__media" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-lg)', textAlign: 'center', background: 'var(--color-bg)', border: '1px dashed var(--color-border)' }}>
+            <p className="muted" style={{ fontStyle: 'italic' }}>Visual Idea: {item.imageHint}</p>
+          </div>
+        )
       )}
 
-      {item.tags?.length ? (
-        <div className="chips-wrap" style={{ marginBottom: 8 }}>
-          {item.tags.map((tag) => (
-            <span key={tag} className="chip" aria-label={`tag ${tag}`}>
+      {tags && tags.length > 1 && (
+        <div className="chips-wrap" style={{ marginTop: 'var(--space-sm)' }}>
+          {tags.slice(1).map((tag) => (
+            <span key={tag} className="chip">
               #{tag}
             </span>
           ))}
         </div>
-      ) : null}
+      )}
 
-      {item.cta && item.cta.target && item.cta.actionType === 'open' ? (
-        <footer>
+      <footer style={{ marginTop: 'auto', paddingTop: 'var(--space-lg)', display: 'grid', gap: 'var(--space-md)' }}>
+        {cta && cta.target && (
           <button
-            className="secondary"
+            className="primary"
+            style={{ width: '100%' }}
             onClick={() => {
-              window.open(item.cta?.target, '_blank')
+              if (cta.actionType === 'open') {
+                window.open(cta.target, '_blank')
+              }
             }}
           >
-            {item.cta.label}
+            {cta.label || '자세히 보기'}
           </button>
-        </footer>
-      ) : null}
+        )}
 
-      <footer>
-        <p className="muted">출처: {item.source.join(', ')}</p>
-        <p className="muted">{item.sourceAt}</p>
+        <div className="row" style={{ justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-sm)' }}>
+          <p className="muted">© {source.join(', ')}</p>
+          <p className="muted">{sourceAt}</p>
+        </div>
       </footer>
     </article>
   )

@@ -8,18 +8,23 @@ export function KeywordChips({
   onPick: (keyword: string) => void
 }) {
   if (!candidates.length) {
-    return <p className="muted">추천 키워드가 비어있어요.</p>
+    return null
   }
 
   return (
     <div className="keyword-chips">
-      <h4>추천 키워드</h4>
+      <h4 style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: 'var(--space-sm)' }}>추천 검색어</h4>
       <div className="chips-wrap">
         {candidates.map((item) => (
           <button
             key={item.keyword}
             type="button"
             className="chip"
+            style={{ 
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              transition: 'all 0.2s ease'
+            }}
             onClick={() => onPick(item.keyword)}
           >
             {item.keyword}

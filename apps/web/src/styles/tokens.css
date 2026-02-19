@@ -1,27 +1,40 @@
 :root {
   --color-main: #00A676;
+  --color-main-soft: rgba(0, 166, 118, 0.1);
   --color-main-pressed: #008f65;
-  --color-sub: #e0d0c1;
-  --color-bg: #f8faf9;
-  --color-surface: #ffffff;
-  --color-text: #1a1a1a;
-  --color-text-muted: #4b5563;
-  --color-border: #e2e8e5;
-  --color-error: #dc2626;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-error-bg: #fef2f2;
+  --color-sub: #E0D0C1;
+  --color-sub-soft: rgba(224, 208, 193, 0.2);
+  --color-bg: #F8FAF9;
+  --color-surface: #FFFFFF;
+  --color-text: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E9E7;
+  --color-error: #EF4444;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error-bg: #FEF2F2;
 
-  --font-sans: Pretendard, SUIT, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Pretendard Variable', Pretendard, SUIT, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  
   --radius-lg: 24px;
   --radius-md: 16px;
-  --radius-sm: 10px;
-  --space-md: 12px;
-  --space-lg: 20px;
+  --radius-sm: 12px;
+  --radius-full: 9999px;
 
-  --shadow-card: 0 8px 24px rgba(0, 166, 118, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 10px 15px -3px rgba(0, 166, 118, 0.04), 0 4px 6px -4px rgba(0, 166, 118, 0.04);
+  --shadow-float: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
   --touch-target: 48px;
-
   --ratio-square: 1 / 1;
   --ratio-portrait: 4 / 5;
+  
+  --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

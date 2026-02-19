@@ -4,13 +4,8 @@ export const defaultTheme = {
   '--color-bg': '#F8FAF9',
   '--color-surface': '#FFFFFF',
   '--color-text': '#1A1A1A',
-  '--color-text-muted': '#4B5563',
-  '--color-border': '#E2E8E5',
-  '--card-accent': '#E0D0C1',
-}
-
-function asEntry(k: string, v: string | undefined): [string, string] {
-  return [k, String(v)]
+  '--color-text-muted': '#6B7280',
+  '--color-border': '#E5E9E7',
 }
 
 export function applyThemeVariables(overrides: Record<string, string> = {}) {
@@ -44,6 +39,6 @@ export async function hydrateThemeFromServer() {
       '--color-text-muted': json.textSecondary || defaultTheme['--color-text-muted'],
     })
   } catch {
-    // Keep default theme if server theme endpoint is unavailable in dev/proxy.
+    // Keep default theme if server theme endpoint is unavailable.
   }
 }

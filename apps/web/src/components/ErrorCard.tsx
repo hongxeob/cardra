@@ -36,24 +36,33 @@ export function ErrorCard({ error, onRetry, onBack }: { error: AppError; onRetry
   const retryLabel = useMemo(() => (remain !== null ? `다시 시도 (${remain}s)` : '다시 시도'), [remain])
 
   return (
-    <section className="card error-card">
-      <h3>요청 처리 실패</h3>
-      <p className="error">{error.message}</p>
-      <p className="muted">코드: {error.code}</p>
-      {error.retryable && onRetry ? (
-        <button className="primary" onClick={onRetry} disabled={disabled}>
-          {retryLabel}
-        </button>
-      ) : null}
-      {onBack ? (
-        <button className="secondary" onClick={onBack}>
-          뒤로 가기
-        </button>
-      ) : null}
-      {error.traceId ? <p className="muted">Trace: {error.traceId}</p> : null}
-      {error.retryAfter ? (
-        <p className="muted">{remain !== null ? '안정화 대기 중입니다.' : '이제 다시 시도 가능합니다.'}</p>
-      ) : null}
+    <section className="card error-card" style={{ borderTop: '4px solid var(--color-error)' }}>
+      <h3 className="error" style={{ marginBottom: 'var(--space-sm)' }}>요청 처리 실패</h3>
+      <p style={{ fontSize: '16px', marginBottom: 'var(--space-md)' }}>{error.message}</p>
+      
+      <div style={{ display: 'grid', gap: 'var(--space-sm)', padding: 'var(--space-md)', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-lg)' }}>
+        <p className="muted" style={{ fontSize: '12px' }}>Error Code: {error.code}</p>
+        {error.traceId && <p className="muted" style={{ fontSize: '11px' }}>Trace: {error.traceId}</p>}
+      </div>
+
+      <div className="row" style={{ gap: 'var(--space-md)' }}>
+        {error.retryable && onRetry && (
+          <button className="primary" style={{ flex: 1 }} onClick={onRetry} disabled={disabled}>
+            {retryLabel}
+          </button>
+        )}
+        {onBack && (
+          <button className="secondary" style={{ flex: 1 }} onClick={onBack}>
+            홈으로 돌아가기
+          </button>
+        )}
+      </div>
+      
+      {error.retryAfter && (
+        <p className="muted" style={{ textAlign: 'center', marginTop: 'var(--space-sm)' }}>
+          {remain !== null ? '안정화 대기 중입니다.' : '이제 다시 시도 가능합니다.'}
+        </p>
+      )}
     </section>
   )
 }
