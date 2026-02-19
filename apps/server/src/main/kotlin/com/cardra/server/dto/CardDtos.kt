@@ -24,6 +24,30 @@ data class CardItem(
     val body: String,
     val source: List<String>,
     val sourceAt: String,
+    val variant: String = "standard",
+    val style: CardStyle = CardStyle(),
+    val media: CardMedia? = null,
+    val cta: CardCta? = null,
+    val tags: List<String> = emptyList(),
+    val imageHint: String? = null,
+)
+
+data class CardStyle(
+    val tone: String = "neutral",
+    val layout: String = "default",
+    val emphasis: String = "balanced",
+)
+
+data class CardMedia(
+    val imageUrl: String? = null,
+    val imageType: String = "illustration",
+    val altText: String? = null,
+)
+
+data class CardCta(
+    val label: String,
+    val actionType: String = "open",
+    val target: String? = null,
 )
 
 data class CardSummaryResponse(

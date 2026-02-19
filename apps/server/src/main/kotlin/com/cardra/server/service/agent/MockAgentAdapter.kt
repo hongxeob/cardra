@@ -3,7 +3,7 @@ package com.cardra.server.service.agent
 import com.cardra.server.dto.CardItem
 import org.springframework.stereotype.Component
 
-@Component
+@Component("mockAgentAdapter")
 class MockAgentAdapter(
     private val researchProvider: ResearchProvider,
 ) : AgentAdapter {
@@ -20,6 +20,27 @@ class MockAgentAdapter(
                         "넘어서 주간 추세로 봐야 과열 논란을 줄일 수 있습니다.",
                 source = listOf("agent://research", "agent://analysis"),
                 sourceAt = sourceTs,
+                variant = "headline",
+                style =
+                    com.cardra.server.dto.CardStyle(
+                        tone = "urgent",
+                        layout = "wide",
+                        emphasis = "trend",
+                    ),
+                media =
+                    com.cardra.server.dto.CardMedia(
+                        imageUrl = "https://picsum.photos/seed/cardra-$keyword/1200/675",
+                        imageType = "hero",
+                        altText = "$keyword 이슈 요약 카드",
+                    ),
+                cta =
+                    com.cardra.server.dto.CardCta(
+                        label = "상세 분석 보기",
+                        actionType = "open",
+                        target = "/cards/details?keyword=$keyword",
+                    ),
+                tags = listOf("headline", "trend"),
+                imageHint = "$keyword 트렌드 인사이트",
             ),
             CardItem(
                 title = "$keyword, 체크할 포인트",
@@ -29,6 +50,14 @@ class MockAgentAdapter(
                         "반복 보도보다 실제 수치와 발언자 신뢰도를 함께 보정해 판단해야 안정적입니다.",
                 source = listOf("agent://analysis", "agent://editor"),
                 sourceAt = sourceTs,
+                variant = "insight",
+                style =
+                    com.cardra.server.dto.CardStyle(
+                        tone = "neutral",
+                        layout = "list",
+                        emphasis = "practical",
+                    ),
+                tags = listOf("analysis", "risk"),
             ),
             CardItem(
                 title = "$keyword 핵심 요약",
@@ -38,6 +67,21 @@ class MockAgentAdapter(
                         "기준점으로 다시 비교해 의사결정 품질과 일관성을 동시에 높여야 합니다.",
                 source = listOf("agent://validation", "agent://research"),
                 sourceAt = sourceTs,
+                variant = "summary",
+                style =
+                    com.cardra.server.dto.CardStyle(
+                        tone = "calm",
+                        layout = "compact",
+                        emphasis = "decision",
+                    ),
+                media =
+                    com.cardra.server.dto.CardMedia(
+                        imageUrl = null,
+                        imageType = "thumbnail",
+                        altText = "$keyword 핵심 포인트",
+                    ),
+                tags = listOf("summary", "decision"),
+                imageHint = "$keyword 핵심",
             ),
         )
     }
