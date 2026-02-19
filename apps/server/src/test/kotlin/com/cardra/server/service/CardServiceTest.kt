@@ -3,6 +3,7 @@ package com.cardra.server.service
 import com.cardra.server.domain.CardEntity
 import com.cardra.server.domain.CardStatus
 import com.cardra.server.dto.CreateCardRequest
+import com.cardra.server.exception.CardNotFoundException
 import com.cardra.server.repository.CardRepository
 import com.cardra.server.service.agent.AgentAdapter
 import com.cardra.server.service.agent.MockAgentAdapter
@@ -64,11 +65,11 @@ class CardServiceTest {
     }
 
     @Test
-    fun `getCard should throw when not found`() {
+    fun `getCard should throw not found for missing id`() {
         val id = UUID.fromString("33333333-3333-3333-3333-333333333333")
         every { repository.findById(id) } returns Optional.empty()
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(CardNotFoundException::class.java) {
             service.getCard(id)
         }
     }

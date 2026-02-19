@@ -5,6 +5,7 @@ import com.cardra.server.domain.CardStatus
 import com.cardra.server.dto.CardItem
 import com.cardra.server.dto.CardResponse
 import com.cardra.server.dto.CreateCardRequest
+import com.cardra.server.exception.CardNotFoundException
 import com.cardra.server.repository.CardRepository
 import com.cardra.server.service.agent.AgentAdapter
 import org.springframework.stereotype.Service
@@ -43,7 +44,10 @@ class CardService(
     }
 
     fun getCard(id: UUID): CardResponse {
-        val e = cardRepository.findById(id).orElseThrow { IllegalArgumentException("Card not found") }
+        val e =
+            cardRepository.findById(id).orElseThrow {
+                CardNotFoundException("Card not found: $id")
+            }
         val cards = parseCards(e.content)
         return CardResponse(e.id!!, e.keyword, cards, e.status, e.createdAt ?: Instant.now())
     }
