@@ -25,14 +25,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Print Java/Gradle info
+        run: |
+          java -version
+          ./gradlew --version
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/server/**/*.gradle*', 'settings.gradle.kts', 'gradlew') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/server/**/*.gradle*', 'apps/server/gradlew', 'apps/server/settings.gradle.kts') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Run ktlint + tests
-        run: ./gradlew test ktlintCheck
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean test ktlintCheck
