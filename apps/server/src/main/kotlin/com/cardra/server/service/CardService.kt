@@ -15,7 +15,7 @@ import java.util.UUID
 @Service
 class CardService(
     private val cardRepository: CardRepository,
-    private val agentAdapter: AgentAdapter
+    private val agentAdapter: AgentAdapter,
 ) {
     @Transactional
     fun createCard(req: CreateCardRequest): CardResponse {
@@ -25,19 +25,20 @@ class CardService(
         val items = agentAdapter.composeCards(keyword)
         validateItems(items)
 
-        val entity = CardEntity(
-            keyword = keyword,
-            content = items.joinToString("\n---\n") { it.body },
-            status = CardStatus.COMPLETED,
-            sourceCount = items.sumOf { it.source.size }
-        )
+        val entity =
+            CardEntity(
+                keyword = keyword,
+                content = items.joinToString("\n---\n") { it.body },
+                status = CardStatus.COMPLETED,
+                sourceCount = items.sumOf { it.source.size },
+            )
         val saved = cardRepository.save(entity)
         return CardResponse(
             id = saved.id ?: UUID.randomUUID(),
             keyword = saved.keyword,
             cards = items,
             status = saved.status,
-            createdAt = saved.createdAt ?: Instant.now()
+            createdAt = saved.createdAt ?: Instant.now(),
         )
     }
 
@@ -54,7 +55,7 @@ class CardService(
                 title = "카드 ${idx + 1}",
                 body = text,
                 source = listOf("agent://system", "agent://final"),
-                sourceAt = Instant.now().toString()
+                sourceAt = Instant.now().toString(),
             )
         }
     }

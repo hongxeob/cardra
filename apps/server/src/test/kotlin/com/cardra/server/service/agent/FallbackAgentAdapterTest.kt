@@ -7,7 +7,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class FallbackAgentAdapterTest {
-
     @Test
     fun `fallback should return safety cards on delegate exception`() {
         val broken = mockk<MockAgentAdapter>()

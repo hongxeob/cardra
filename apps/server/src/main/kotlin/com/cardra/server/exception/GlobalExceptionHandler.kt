@@ -10,7 +10,6 @@ import java.time.Instant
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
-
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleBadRequest(e: IllegalArgumentException): ResponseEntity<ErrorBody> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -34,5 +33,5 @@ class GlobalExceptionHandler {
 data class ErrorBody(
     val code: String,
     val message: String,
-    val time: String = Instant.now().toString()
+    val time: String = Instant.now().toString(),
 )

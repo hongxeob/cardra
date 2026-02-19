@@ -32,7 +32,7 @@ class CardServiceTest {
                 content = entity.content,
                 status = entity.status,
                 sourceCount = entity.sourceCount,
-                createdAt = Instant.parse("2026-02-19T00:00:00Z")
+                createdAt = Instant.parse("2026-02-19T00:00:00Z"),
             )
         }
 
@@ -53,16 +53,17 @@ class CardServiceTest {
     @Test
     fun `getCard should return parsed cards by id`() {
         val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
-        every { repository.findById(id) } returns Optional.of(
-            CardEntity(
-                id = id,
-                keyword = "AI 에이전트",
-                content = "card body one\n---\ncard body two",
-                status = CardStatus.COMPLETED,
-                sourceCount = 2,
-                createdAt = Instant.parse("2026-02-19T00:00:00Z")
+        every { repository.findById(id) } returns
+            Optional.of(
+                CardEntity(
+                    id = id,
+                    keyword = "AI 에이전트",
+                    content = "card body one\n---\ncard body two",
+                    status = CardStatus.COMPLETED,
+                    sourceCount = 2,
+                    createdAt = Instant.parse("2026-02-19T00:00:00Z"),
+                ),
             )
-        )
 
         val result = service.getCard(id)
 

@@ -5,11 +5,10 @@ import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 import java.util.UUID
 
-
 data class CreateCardRequest(
     @field:NotBlank
     val keyword: String,
-    val tone: String = "neutral"
+    val tone: String = "neutral",
 )
 
 data class CardResponse(
@@ -24,12 +23,12 @@ data class CardItem(
     val title: String,
     val body: String,
     val source: List<String>,
-    val sourceAt: String
+    val sourceAt: String,
 )
 
 data class CardSummaryResponse(
     val id: java.util.UUID,
     val keyword: String,
     val status: CardStatus,
-    val createdAt: java.time.Instant
+    val createdAt: java.time.Instant,
 )
