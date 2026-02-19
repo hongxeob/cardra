@@ -39,6 +39,8 @@ class UiController {
                         UiRouteInfo("Research Job Status", "GET", "/api/v1/research/jobs/{jobId}", "리서치 작업 상태"),
                         UiRouteInfo("Research Job Result", "GET", "/api/v1/research/jobs/{jobId}/result", "리서치 결과 조회"),
                         UiRouteInfo("Research Job Cancel", "POST", "/api/v1/research/jobs/{jobId}/cancel", "리서치 작업 취소"),
+                        UiRouteInfo("Image Provider Status", "GET", "/api/v1/images/providers/status", "이미지 제공자 상태"),
+                        UiRouteInfo("Image Generate", "POST", "/api/v1/images/generate", "이미지 생성"),
                         UiRouteInfo("Recommend Keywords", "POST", "/api/v1/recommend/keywords", "추천 키워드"),
                         UiRouteInfo("Recommend Events", "POST", "/api/v1/recommend/events", "이벤트 수집"),
                     ),

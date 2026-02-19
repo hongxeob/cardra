@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { healthApi, uiApi } from '../lib/api'
+import { storage } from '../lib/storage'
 
 function HealthBadge({ health }: { health: 'ok' | 'bad' | 'loading' }) {
   const label = health === 'ok' ? 'SYSTEM OK' : health === 'bad' ? 'MAINTENANCE' : 'CHECKING'
@@ -60,20 +61,15 @@ export function HomePage() {
       .catch(() => setHealth('bad'))
   }, [])
 
-  // Mock recent cards for enhanced design
-  const recentCards = [
-    { id: '1', keyword: '2026 AI 트렌드', date: '2시간 전', emoji: '🤖' },
-    { id: '2', keyword: '건강한 식단 팁', date: '5시간 전', emoji: '🥗' },
-    { id: '3', keyword: '테크 뉴스 요약', date: '어제', emoji: '📱' },
-  ]
+  const recentCards = useMemo(() => storage.getRecentCards(), [])
 
   return (
     <section style={{ animation: 'fadeIn 0.5s ease-out' }}>
-      <header className="home-hero">
-        <p className="home-eyebrow">Smart Content Orchestrator</p>
+      <header className="home-hero" style={{ paddingTop: 'var(--space-md)' }}>
+        <p className="home-eyebrow">Real-time Hot Issue Summary</p>
         <h1 style={{ letterSpacing: '-0.04em', fontWeight: 900 }}>Cardra</h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '18px', maxWidth: '320px', margin: '0 auto var(--space-lg)', lineHeight: 1.4 }}>
-          당신의 아이디어를 임팩트 있는 <strong style={{ color: 'var(--color-main)' }}>카드 뉴스</strong>로 변환하세요.
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '18px', maxWidth: '360px', margin: '0 auto var(--space-lg)', lineHeight: 1.4 }}>
+          키워드 하나로 지금 가장 <strong style={{ color: 'var(--color-main)' }}>뜨거운 이슈</strong>를 2~3장 카드뉴스로 요약하세요.
         </p>
         <HealthBadge health={health} />
       </header>
@@ -94,7 +90,7 @@ export function HomePage() {
               <span style={{ fontSize: '32px' }}>{action.icon}</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 800 }}>{action.label}</span>
-                <span className="muted">{action.detail}</span>
+                <span className="muted">{action.key.includes('create') ? '지금 유행하는 키워드로 요약 생성' : '데이터 기반 딥 분석 리포트'}</span>
               </div>
               <span style={{ marginLeft: 'auto', color: 'var(--color-main)', fontWeight: 800 }}>→</span>
             </button>
@@ -104,20 +100,27 @@ export function HomePage() {
 
       <section className="recent-section">
         <h3 style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: 'var(--space-md)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>최근 생성된 카드</h3>
-        <div style={{ display: 'grid', gap: 'var(--space-sm)' }}>
-          {recentCards.map(card => (
-            <Link key={card.id} to={`/cards/${card.id}`} style={{ textDecoration: 'none' }}>
-              <div className="card" style={{ padding: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)', border: '1px solid var(--color-border)' }}>
-                <span style={{ fontSize: '24px' }}>{card.emoji}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text)' }}>{card.keyword}</p>
-                  <p className="muted" style={{ fontSize: '12px' }}>{card.date}</p>
+        {recentCards.length > 0 ? (
+          <div style={{ display: 'grid', gap: 'var(--space-sm)' }}>
+            {recentCards.map(card => (
+              <Link key={card.id} to={`/cards/${card.id}`} style={{ textDecoration: 'none' }}>
+                <div className="card" style={{ padding: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)', border: '1px solid var(--color-border)' }}>
+                  <span style={{ fontSize: '24px' }}>📄</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text)' }}>{card.keyword}</p>
+                    <p className="muted" style={{ fontSize: '12px' }}>{new Date(card.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <span style={{ color: 'var(--color-border)' }}>›</span>
                 </div>
-                <span style={{ color: 'var(--color-border)' }}>›</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="card" style={{ padding: 'var(--space-xl)', textAlign: 'center', background: 'var(--color-bg)', border: '1px dashed var(--color-border)' }}>
+            <p className="muted">아직 생성된 카드가 없습니다.</p>
+            <Link to="/create" style={{ display: 'inline-block', marginTop: 'var(--space-sm)', color: 'var(--color-main)', fontWeight: 700 }}>첫 카드 만들기 →</Link>
+          </div>
+        )}
       </section>
 
       <footer style={{ marginTop: 'var(--space-xl)', textAlign: 'center', padding: 'var(--space-lg) 0' }}>

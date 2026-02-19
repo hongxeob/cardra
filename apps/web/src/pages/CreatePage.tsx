@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { cardApi, recommendApi, researchApi } from '../lib/api'
 import { createRecommendEvent } from '../lib/api'
 import { toAppError } from '../lib/error'
+import { storage } from '../lib/storage'
 import { LoadingCard } from '../components/LoadingCard'
 import { ErrorCard } from '../components/ErrorCard'
 import { KeywordChips } from '../features/recommend/KeywordChips'
@@ -44,6 +45,7 @@ export function CreatePage() {
   const cardMut = useMutation({
     mutationFn: () => cardApi.generate({ keyword, tone }),
     onSuccess: (res) => {
+      storage.saveCard(res)
       navigate(`/cards/${res.id}`)
       recommendApi.events({
         userId,
@@ -111,8 +113,8 @@ export function CreatePage() {
         <button className="muted" onClick={() => navigate('/')} style={{ background: 'none', padding: 0, minHeight: 'auto', marginBottom: 'var(--space-md)' }}>
           ← 뒤로 가기
         </button>
-        <h2 style={{ fontSize: '32px' }}>콘텐츠 생성</h2>
-        <p className="muted">키워드를 입력하면 AI가 최적의 카드뉴스를 구성합니다.</p>
+        <h2 style={{ fontSize: '32px' }}>이슈 요약 생성</h2>
+        <p className="muted">아무 키워드나 입력하세요. AI가 최신 이슈를 3장으로 요약합니다.</p>
       </header>
 
       <form onSubmit={handleSubmit} className="card-form">
@@ -143,11 +145,11 @@ export function CreatePage() {
         </div>
 
         <div className="field">
-          <label>주제 및 키워드</label>
+          <label>키워드 입력</label>
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="주제를 입력하거나 추천 키워드를 선택하세요"
+            placeholder="예: 엔비디아 주가, 뉴진스 컴백, 비트코인"
             autoFocus
           />
         </div>
@@ -155,7 +157,7 @@ export function CreatePage() {
         {keyword.length >= 2 && (
           <div className="keyword-chips-section" style={{ marginBottom: 'var(--space-lg)' }}>
             {isRecommendLoading ? (
-              <p className="muted" style={{ fontSize: '12px' }}>연관 키워드 탐색 중...</p>
+              <p className="muted" style={{ fontSize: '12px' }}>최신 연관어 탐색 중...</p>
             ) : (
               <KeywordChips
                 candidates={recommendData?.candidates ?? []}
@@ -166,16 +168,16 @@ export function CreatePage() {
         )}
 
         <div className="field">
-          <label>스타일 톤</label>
+          <label>뉴스 스타일</label>
           <div className="row" style={{ gap: 'var(--space-sm)' }}>
-            {['minimal', 'professional', 'cheerful', 'cyberpunk'].map((t) => (
+            {['objective', 'insightful', 'witty', 'summary'].map((t) => (
               <button
                 key={t}
                 type="button"
                 className={tone === t ? 'primary' : 'secondary'}
                 style={{ 
                   flex: 1, 
-                  fontSize: '14px', 
+                  fontSize: '13px', 
                   minHeight: '40px',
                   background: tone === t ? 'var(--color-main)' : 'var(--color-bg)',
                   border: tone === t ? 'none' : '1px solid var(--color-border)',
@@ -183,7 +185,7 @@ export function CreatePage() {
                 }}
                 onClick={() => setTone(t)}
               >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'objective' ? '객관적' : t === 'insightful' ? '통찰력' : t === 'witty' ? '위트있는' : '핵심요약'}
               </button>
             ))}
           </div>

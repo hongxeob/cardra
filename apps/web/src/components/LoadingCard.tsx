@@ -10,7 +10,7 @@ export function LoadingCard({ label }: { label?: string }) {
       textAlign: 'center'
     }}>
       <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '4px' }}></div>
-      <p style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>{label ?? '데이터를 처리하고 있습니다...'}</p>
+      <p style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>{label ?? '최신 뉴스 및 트렌드 데이터를 수집 중입니다...'}</p>
     </section>
   )
 }

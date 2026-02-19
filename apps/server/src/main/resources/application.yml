@@ -36,3 +36,17 @@ cardra:
       enabled: false
       timeout-seconds: 6
       endpoint: ""
+  image:
+    provider: ${CARDRA_IMAGE_PROVIDER:openai}
+    openai:
+      enabled: ${CARDRA_IMAGE_OPENAI_ENABLED:false}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      model: ${OPENAI_IMAGE_MODEL:gpt-image-1}
+      api-key: ${OPENAI_API_KEY:}
+      timeout-seconds: ${OPENAI_IMAGE_TIMEOUT_SECONDS:30}
+    gemini:
+      enabled: ${CARDRA_IMAGE_GEMINI_ENABLED:false}
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      model: ${GEMINI_IMAGE_MODEL:gemini-2.5-flash-image}
+      api-key: ${GEMINI_API_KEY:}
+      timeout-seconds: ${GEMINI_IMAGE_TIMEOUT_SECONDS:30}

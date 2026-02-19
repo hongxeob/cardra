@@ -27,7 +27,7 @@ class UiControllerTest {
         mvc.perform(get("/api/v1/ui/contracts"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.routes[0].method").exists())
-            .andExpect(jsonPath("$.routes.length()").value(9))
+            .andExpect(jsonPath("$.routes.length()").value(11))
             .andExpect(jsonPath("$.routes[0].path").value("/api/v1/cards/generate"))
             .andExpect(jsonPath("$.routes[1].path").value("/api/v1/cards/{id}"))
             .andExpect(jsonPath("$.routes[2].path").value("/api/v1/research/run"))

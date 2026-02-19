@@ -65,6 +65,55 @@ curl -s -X POST http://localhost:9999/api/v1/research/run \
 
 응답에서 `items`, `summary`, `usage` 필드가 채워지면 OpenAI 경로 또는 fallback 경로가 정상 동작합니다.
 
+## 이미지 생성 AI 테스트 (OpenAI / Gemini)
+
+이미지 생성 API:
+- `POST /api/v1/images/generate`
+- `GET /api/v1/images/providers/status` (키/활성 상태 점검)
+
+필요 환경 변수 (OpenAI 사용):
+```bash
+cd apps/server
+export OPENAI_API_KEY="sk-..."
+export CARDRA_IMAGE_PROVIDER="openai"
+export CARDRA_IMAGE_OPENAI_ENABLED=true
+export OPENAI_IMAGE_MODEL="gpt-image-1"
+```
+
+필요 환경 변수 (Gemini nano banana 사용):
+```bash
+cd apps/server
+export GEMINI_API_KEY="..."
+export CARDRA_IMAGE_PROVIDER="gemini"
+export CARDRA_IMAGE_GEMINI_ENABLED=true
+export GEMINI_IMAGE_MODEL="gemini-2.5-flash-image"
+```
+
+호출 예시:
+```bash
+curl -s -X POST http://localhost:9999/api/v1/images/generate \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt":"미래 도시와 AI 에이전트, 시네마틱 조명",
+    "size":"1024x1024",
+    "provider":"gemini"
+  }'
+```
+
+`provider`는 선택입니다.
+- 미지정: `CARDRA_IMAGE_PROVIDER` 설정값 사용
+- 지정 가능값: `openai`, `gemini`, `nano-banana` (`nano banana`도 허용)
+
+상태 점검 예시:
+```bash
+curl -s http://localhost:9999/api/v1/images/providers/status
+```
+
+응답:
+- OpenAI 성공 시 `provider=openai` 및 `imageBase64` 또는 `imageUrl`
+- Gemini 성공 시 `provider=gemini` 및 `imageBase64`
+- 실패/미설정 시 fallback으로 `provider=stub`, `imageUrl` 반환
+
 ## 코드 스타일
 - `ktlint` 적용: `./gradlew ktlintCheck`
 - 추천: 커밋 전후 `ktlintCheck` 통과 필수
