@@ -3,6 +3,9 @@ import type {
   ApiErrorShape,
   CardResponse,
   CreateCardRequest,
+  RecommendEvent,
+  RecommendEventRequest,
+  RecommendEventResponse,
   RecommendKeywordRequest,
   RecommendKeywordResponse,
   ResearchJobCreateRequest,
@@ -18,7 +21,7 @@ export const cardApi = {
 }
 
 export const researchApi = {
-  run: (body: ResearchRunRequest) => api.post<CardResponse>('/research/run', body),
+  run: (body: ResearchRunRequest) => api.post('/research/run', body),
   createJob: (body: ResearchJobCreateRequest) =>
     api.post<ResearchJobCreateResponse>('/research/jobs', body),
   getStatus: (jobId: string) => api.get<ResearchJobStatusResponse>(`/research/jobs/${jobId}`),
@@ -28,8 +31,7 @@ export const researchApi = {
 
 export const recommendApi = {
   keywords: (body: RecommendKeywordRequest) => api.post<RecommendKeywordResponse>('/recommend/keywords', body),
-  events: (body: { userId: string; events: Array<{ eventType: string; keyword: string; eventTs: string }> }) =>
-    api.post('/recommend/events', body),
+  events: (body: RecommendEventRequest) => api.post<RecommendEventResponse>('/recommend/events', body),
 }
 
 export const healthApi = {
@@ -39,3 +41,10 @@ export const healthApi = {
 export function parseApiError(payload: unknown): ApiErrorShape {
   return payload as ApiErrorShape
 }
+
+export const createRecommendEvent = (keyword: string): RecommendEvent => ({
+  eventType: 'search',
+  keyword,
+  eventTs: new Date().toISOString(),
+  metadata: { source: 'web-ui' },
+})

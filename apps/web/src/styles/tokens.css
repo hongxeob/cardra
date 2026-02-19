@@ -1,14 +1,21 @@
 :root {
   --color-main: #00A676;
   --color-sub: #E0D0C1;
-  --color-bg: #F8FAF9;
-  --color-surface: #FFFFFF;
-  --color-text: #0F172A;
-  --color-text-muted: #334155;
-  --color-border: #E5E7EB;
+  --color-bg: #f4f9f7;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-muted: #4b5563;
+  --color-border: #dbe5df;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
 
   --font-sans: Pretendard, SUIT, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
-  --card-radius: 12px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
   --space-md: 12px;
   --space-lg: 20px;
+
+  --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
 }

@@ -1,17 +1,37 @@
 import type { CardItem } from '../../lib/types'
 
-function classesForVariant(variant?: string) {
-  if (variant === 'headline') return 'card'
-  if (variant === 'insight') return 'card'
-  if (variant === 'summary') return 'card'
-  return 'card'
+function variantClass(variant?: string) {
+  switch (variant) {
+    case 'headline':
+      return 'card card-item variant-headline'
+    case 'insight':
+      return 'card card-item variant-insight'
+    case 'summary':
+      return 'card card-item variant-summary'
+    default:
+      return 'card card-item'
+  }
+}
+
+function layoutClass(layout?: string) {
+  if (layout === 'wide') return 'wide'
+  if (layout === 'compact') return 'compact'
+  return ''
 }
 
 export function CardItemBlock({ item }: { item: CardItem }) {
+  const style = item.style
+
   return (
-    <article className={classesForVariant(item.variant)} style={{ marginBottom: 12 }}>
-      <h3>{item.title}</h3>
-      <p style={{ whiteSpace: 'pre-wrap' }}>{item.body}</p>
+    <article className={variantClass(item.variant)} data-layout={layoutClass(style?.layout)}>
+      <h3 className="card-title">{item.title}</h3>
+      <p className="card-body">{item.body}</p>
+
+      {style ? (
+        <p className="muted">
+          tone: {style.tone} / {style.layout} / {style.emphasis}
+        </p>
+      ) : null}
 
       {item.media?.imageUrl ? (
         <img
@@ -20,23 +40,23 @@ export function CardItemBlock({ item }: { item: CardItem }) {
           style={{ width: '100%', borderRadius: 12, margin: '12px 0' }}
         />
       ) : (
-        item.imageHint && <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>이미지 힌트: {item.imageHint}</p>
+        item.imageHint && <p className="muted">이미지 힌트: {item.imageHint}</p>
       )}
 
-      {item.tags && item.tags.length > 0 && (
-        <div className="row" style={{ flexWrap: 'wrap' }}>
+      {item.tags?.length ? (
+        <div className="chips-wrap" style={{ marginBottom: 8 }}>
           {item.tags.map((tag) => (
-            <span key={tag} className="card" style={{ padding: '2px 8px', fontSize: 12 }}>
+            <span key={tag} className="chip">
               #{tag}
             </span>
           ))}
         </div>
-      )}
+      ) : null}
 
       {item.cta && (
-        <div style={{ marginTop: 8 }}>
+        <div>
           <button
-            className="primary"
+            className="secondary"
             onClick={() => {
               if (item.cta?.target) {
                 if (item.cta.actionType === 'open') {
@@ -49,6 +69,9 @@ export function CardItemBlock({ item }: { item: CardItem }) {
           </button>
         </div>
       )}
+
+      <p className="muted">출처: {item.source.join(', ')}</p>
+      <p className="muted">{item.sourceAt}</p>
     </article>
   )
 }

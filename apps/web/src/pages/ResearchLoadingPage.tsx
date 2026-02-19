@@ -3,12 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { researchApi } from '../lib/api'
 import { toAppError } from '../lib/error'
+import { ErrorCard } from '../components/ErrorCard'
+import { LoadingCard } from '../components/LoadingCard'
 
 export function ResearchLoadingPage() {
   const { jobId } = useParams()
   const navigate = useNavigate()
 
-  const { data, dataUpdatedAt, error } = useQuery({
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: ['research-status', jobId],
     enabled: Boolean(jobId),
     queryFn: () => researchApi.getStatus(jobId ?? ''),
@@ -25,28 +27,38 @@ export function ResearchLoadingPage() {
     }
   }, [data?.status, jobId, navigate])
 
+  if (isLoading) {
+    return <LoadingCard label="리서치 상태를 확인 중입니다." />
+  }
+
   if (error) {
     const err = toAppError(error)
-    return <div className="error">{err.message}</div>
+    return (
+      <ErrorCard
+        error={err}
+        onRetry={() => refetch()}
+        onBack={() => {
+          if (jobId) {
+            navigate(`/research/${jobId}/result`)
+          }
+        }}
+      />
+    )
   }
 
   return (
     <div>
       <h2>리서치 진행중</h2>
       <p>jobId: {jobId}</p>
-      <p>마지막 갱신: {new Date(dataUpdatedAt).toLocaleTimeString()}</p>
       <p>상태: {data?.status ?? 'loading'}</p>
-      <p>createdAt: {data?.createdAt}</p>
+      {data?.createdAt ? <p>createdAt: {data.createdAt}</p> : null}
+      <p>마지막 갱신: {data ? new Date().toLocaleTimeString() : '-'}</p>
       <div className="row" style={{ marginTop: 12 }}>
         <button className="secondary" onClick={() => navigate(`/research/${jobId}/result`)}>
           결과 확인
         </button>
-        <button
-          className="primary"
-          onClick={() => cancelMut.mutate()}
-          disabled={cancelMut.isPending}
-        >
-          취소
+        <button className="primary" onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending}>
+          {cancelMut.isPending ? '취소중...' : '취소'}
         </button>
       </div>
     </div>

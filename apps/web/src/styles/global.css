@@ -13,28 +13,39 @@ body {
   background: var(--color-bg);
 }
 
-#root {
-  min-height: 100vh;
-}
-
-a { color: var(--color-main); }
+#root { min-height: 100vh; }
 
 .app-shell {
-  max-width: 840px;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 24px 16px 48px;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: 2px solid color-mix(in srgb, var(--color-main) 35%, white);
 }
 
 .row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 button {
   border: 0;
-  padding: 10px 14px;
   border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -45,15 +56,77 @@ button {
 
 .secondary {
   background: var(--color-sub);
-  color: #1f2937;
+  color: #0f172a;
 }
 
-.error { color: #b91c1c; }
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .card {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 14px;
-  box-shadow: 0 6px 14px rgba(0,0,0,.04);
+  box-shadow: var(--shadow-card);
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: var(--color-main);
+  animation: spin 0.7s linear infinite;
+}
+
+.error { color: var(--color-error); }
+.muted { color: var(--color-text-muted); font-size: 13px; }
+
+.card-item {
+  margin-bottom: 12px;
+}
+
+.card-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.card-body { white-space: pre-wrap; margin: 0 0 10px; color: #1f2937; }
+
+.chips-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: var(--color-sub);
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.result-block {
+  white-space: pre-wrap;
+  background: #fff;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.field { margin-top: 12px; display: grid; gap: 6px; }
+.card-form { display: grid; gap: 12px; }
+
+.keyword-chips h4 { margin: 4px 0 8px; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
