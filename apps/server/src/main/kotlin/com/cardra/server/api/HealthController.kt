@@ -11,13 +11,13 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/v1")
 class HealthController {
-  @GetMapping("/health")
-  fun health(): CardSummaryResponse {
-    return CardSummaryResponse(
-      id = UUID.randomUUID(),
-      keyword = "health",
-      status = CardStatus.COMPLETED,
-      createdAt = Instant.now(),
-    )
-  }
+    @GetMapping("/health")
+    fun health(): CardSummaryResponse {
+        return CardSummaryResponse(
+            id = UUID.randomUUID(),
+            keyword = "health",
+            status = CardStatus.COMPLETED,
+            createdAt = Instant.now(),
+        )
+    }
 }
