@@ -96,7 +96,7 @@ export function CardRenderer({ card }: { card: CardResponse }) {
             padding: '4px 12px',
             fontSize: '11px',
             fontWeight: 800
-          }}>{card.status}</span>
+          }}>{{ COMPLETED: '완료', FAILED: '실패', PROCESSING: '처리중' }[card.status] ?? card.status}</span>
           <span className="muted" style={{ fontSize: '11px' }}>{new Date(card.createdAt).toLocaleDateString()}</span>
         </div>
         <h2 style={{ fontSize: '36px', letterSpacing: '-0.04em', fontWeight: 900, marginBottom: 'var(--space-md)' }}>{card.keyword}</h2>

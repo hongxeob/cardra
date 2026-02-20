@@ -142,7 +142,7 @@ export function HomePage() {
 
       <footer style={{ marginTop: 'var(--space-xl)', textAlign: 'center', padding: 'var(--space-lg) 0' }}>
         <p className="muted" style={{ fontSize: '12px' }}>
-          Powered by Gemini Agent Engine
+          AI-powered by Cardra
         </p>
       </footer>
 

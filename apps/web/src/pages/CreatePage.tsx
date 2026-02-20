@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { FormEvent, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { cardApi, recommendApi } from '../lib/api'
 import { createRecommendEvent } from '../lib/api'
@@ -7,33 +7,14 @@ import { toAppError } from '../lib/error'
 import { storage } from '../lib/storage'
 import { LoadingCard } from '../components/LoadingCard'
 import { ErrorCard } from '../components/ErrorCard'
-import { KeywordChips } from '../features/recommend/KeywordChips'
-
-const userId = 'local-user'
 
 export function CreatePage() {
+  const userId = storage.getUserId()
   const [keyword, setKeyword] = useState('')
   const [tone, setTone] = useState('objective')
   const [categoryId, setCategoryId] = useState('tech')
   const navigate = useNavigate()
   const [researchMode, setResearchMode] = useState(false)
-
-  const {
-    data: recommendData,
-    isLoading: isRecommendLoading,
-    refetch: loadRecommendations,
-  } = useQuery({
-    queryKey: ['recommend-keywords', keyword, categoryId],
-    enabled: keyword.length >= 2 || !!categoryId,
-    staleTime: 30_000,
-    queryFn: () =>
-      recommendApi.keywords({
-        userId,
-        currentQuery: keyword,
-        categoryId: categoryId,
-        limit: 5,
-      }),
-  })
 
   const categories = [
     { id: 'tech', label: 'IT/테크', icon: '💻' },
@@ -48,6 +29,7 @@ export function CreatePage() {
         keyword,
         tone,
         mode: researchMode ? 'deep' : 'quick',
+        categoryId,
       }),
     onSuccess: (res) => {
       storage.saveCard(res)
@@ -67,14 +49,6 @@ export function CreatePage() {
   }
 
   const cardError = cardMut.error ? toAppError(cardMut.error as unknown) : null
-
-  useEffect(() => {
-    if (!keyword) return
-    const t = window.setTimeout(() => {
-      loadRecommendations()
-    }, 500)
-    return () => window.clearTimeout(t)
-  }, [keyword, loadRecommendations])
 
   if (cardMut.isPending) {
     return (
@@ -150,19 +124,6 @@ export function CreatePage() {
             autoFocus
           />
         </div>
-
-        {keyword.length >= 2 && (
-          <div className="keyword-chips-section" style={{ marginBottom: 'var(--space-lg)' }}>
-            {isRecommendLoading ? (
-              <p className="muted" style={{ fontSize: '12px' }}>최신 연관어 탐색 중...</p>
-            ) : (
-              <KeywordChips
-                candidates={recommendData?.candidates ?? []}
-                onPick={(k) => setKeyword(k)}
-              />
-            )}
-          </div>
-        )}
 
         <div className="field">
           <label>뉴스 스타일</label>

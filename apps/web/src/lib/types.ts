@@ -43,6 +43,7 @@ export type CreateCardRequest = {
   keyword: string
   tone?: string
   mode?: 'quick' | 'deep'
+  categoryId?: string
 }
 
 export type ResearchRunRequest = {
