@@ -26,10 +26,9 @@ type QuickAction = {
 
 const routeByApiSignature: Record<string, QuickAction> = {
   'POST /api/v1/cards/generate': { key: 'cards-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
-  'POST /api/v1/research/run': { key: 'research-run', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
 }
 
-const quickActionOrder = ['cards-create', 'research-run']
+const quickActionOrder = ['cards-create']
 
 function routeSignature(method: string, path: string) {
   return `${method.toUpperCase()} ${path}`
@@ -46,7 +45,6 @@ export function HomePage() {
   const quickActions = useMemo<QuickAction[]>(() => {
     const defaultActions = [
       { key: 'default-create', to: '/create', label: '카드 만들기', detail: '키워드로 AI 카드뉴스를 생성합니다.', icon: '✨' },
-      { key: 'default-research', to: '/create', label: '딥 리서치', detail: '실시간 데이터를 분석하여 리포트를 작성합니다.', icon: '🔍' },
     ]
 
     if (!contractData?.routes?.length) return defaultActions
@@ -99,12 +97,12 @@ export function HomePage() {
               gap: 'var(--space-md)',
               padding: 'var(--space-lg)',
               border: '2px solid transparent',
-              background: action.key.includes('create') ? 'var(--color-surface)' : 'var(--color-bg)'
+              background: 'var(--color-surface)'
             }}>
               <span style={{ fontSize: '32px' }}>{action.icon}</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <span style={{ fontSize: '18px', fontWeight: 800 }}>{action.label}</span>
-                <span className="muted">{action.key.includes('create') ? '지금 유행하는 키워드로 요약 생성' : '데이터 기반 딥 분석 리포트'}</span>
+                <span className="muted">지금 유행하는 키워드로 요약 생성</span>
               </div>
               <span style={{ marginLeft: 'auto', color: 'var(--color-main)', fontWeight: 800 }}>→</span>
             </button>
