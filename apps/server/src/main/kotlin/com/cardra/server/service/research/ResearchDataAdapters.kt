@@ -113,6 +113,10 @@ class OpenAiResearchDataAdapter(
         val searchText = callWebSearch(req.keyword, req.timeRange, traceId)
         val payload = callStructuring(searchText, req, traceId)
 
+        if (payload.items.isEmpty()) {
+            throw ExternalResearchSchemaError("OpenAI structuring response contains no items")
+        }
+
         return ResearchDataPayload(
             items = payload.items,
             summary = payload.summary ?: throw ExternalResearchSchemaError("OpenAI structuring response contains no summary"),
@@ -222,26 +226,41 @@ class OpenAiResearchDataAdapter(
                 throw ExternalResearchTimeoutError("OpenAI web search call failed")
             }
 
-        val text =
+        val messageContents =
             response.body
                 ?.output
                 ?.filter { it.type == "message" }
                 ?.flatMap { it.content }
                 ?.filter { it.type == "output_text" }
-                ?.mapNotNull { it.text }
-                ?.joinToString("\n")
                 .orEmpty()
+
+        val text = messageContents.mapNotNull { it.text }.joinToString("\n")
 
         if (text.isBlank()) {
             throw ExternalResearchSchemaError("OpenAI web search returned empty result")
         }
 
+        val sourceHints =
+            messageContents
+                .flatMap { it.annotations }
+                .filter { it.type == "url_citation" && it.url != null }
+                .mapNotNull { it.url }
+                .distinct()
+
+        val fullText =
+            if (sourceHints.isNotEmpty()) {
+                "$text\n\nSources:\n${sourceHints.joinToString("\n") { "- $it" }}"
+            } else {
+                text
+            }
+
         logger.info(
-            "research_openai_websearch_success: traceId={} textLength={}",
+            "research_openai_websearch_success: traceId={} textLength={} sourceHints={}",
             traceId,
-            text.length,
+            fullText.length,
+            sourceHints.size,
         )
-        return text
+        return fullText
     }
 
     private fun mapHttpError(e: RestClientResponseException): ExternalResearchError {
@@ -588,7 +607,10 @@ data class OpenAiResponsesResponse(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class OpenAiResponseOutput(
+    val id: String = "",
     val type: String = "",
+    val status: String = "",
+    val role: String? = null,
     val content: List<OpenAiResponseContent> = emptyList(),
 )
 
@@ -596,4 +618,12 @@ data class OpenAiResponseOutput(
 data class OpenAiResponseContent(
     val type: String = "",
     val text: String? = null,
+    val annotations: List<OpenAiResponseAnnotation> = emptyList(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class OpenAiResponseAnnotation(
+    val type: String = "",
+    val url: String? = null,
+    val title: String? = null,
 )

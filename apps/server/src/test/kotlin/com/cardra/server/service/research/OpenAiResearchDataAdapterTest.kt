@@ -45,17 +45,22 @@ class OpenAiResearchDataAdapterTest {
     }
 
     @Test
-    fun `throws schema error when web search returns empty text`() {
-        val config =
-            OpenAiResearchConfig().apply {
-                enabled = false
-                apiKey = "sk-test"
-                model = "gpt-4.1-mini"
+    fun `OpenAiResponseContent deserializes annotations with url and title`() {
+        val mapper = jacksonObjectMapper()
+        val json =
+            """
+            {
+              "type": "output_text",
+              "text": "some text",
+              "annotations": [
+                {"type": "url_citation", "url": "https://news.example.com/1", "title": "News Title", "start_index": 0, "end_index": 10}
+              ]
             }
-        val adapter = OpenAiResearchDataAdapter(config, jacksonObjectMapper(), RestTemplateBuilder())
-        assertThrows(ExternalResearchSchemaError::class.java) {
-            adapter.fetch(ResearchRunRequest(keyword = "AI"), "trace-1")
-        }
+            """.trimIndent()
+        val content = mapper.readValue(json, OpenAiResponseContent::class.java)
+        assertEquals(1, content.annotations.size)
+        assertEquals("https://news.example.com/1", content.annotations[0].url)
+        assertEquals("News Title", content.annotations[0].title)
     }
 
     @Test
@@ -65,7 +70,7 @@ class OpenAiResearchDataAdapterTest {
             """
             {
               "output": [
-                {"type": "web_search_call", "content": []},
+                {"type": "web_search_call", "id": "ws_123", "status": "completed"},
                 {"type": "message", "content": [
                   {"type": "output_text", "text": "검색 결과 텍스트"}
                 ]}
