@@ -18,6 +18,9 @@ apps/web/*.log
 .omx/state/
 .omx/metrics.json
 
+# Git worktrees
+.worktrees/
+
 # Local secrets / env
 .env
 .env.*
