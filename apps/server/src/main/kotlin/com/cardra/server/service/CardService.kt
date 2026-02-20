@@ -69,7 +69,7 @@ class CardService(
     private fun validateItems(items: List<CardItem>) {
         require(items.isNotEmpty()) { "cards must not be empty" }
         require(items.size in 2..3) { "cards must be 2 or 3" }
-        require(items.all { it.body.length in 120..220 }) { "each card body should be between 120 and 220 chars" }
+        require(items.all { it.body.isNotBlank() }) { "each card body must not be blank" }
     }
 
     private fun normalizeMode(raw: String): String {
@@ -91,43 +91,12 @@ class CardService(
                     factcheckMode = "strict",
                 ),
             )
-        val item1 = research.items.getOrNull(0)
-        val item2 = research.items.getOrNull(1) ?: item1
         val uniqueSources = research.items.map { it.source.url }.filter { it.isNotBlank() }.distinct()
         val sourceAt = research.generatedAt
-        val flags =
-            if (research.summary.riskFlags.isNotEmpty()) {
-                research.summary.riskFlags.joinToString(", ")
-            } else {
-                "low"
-            }
 
-        val card1Body =
-            fitCardBody(
-                """
-                딥 리서치 기준 핵심 요약입니다. ${research.summary.brief}
-                주요 근거는 ${item1?.source?.publisher ?: "research provider"}와
-                ${item2?.source?.publisher ?: "secondary source"}이며, 요약은 실시간 수집 데이터와
-                교차 검증 결과를 기준으로 작성했습니다.
-                """.trimIndent(),
-            )
-        val card2Body =
-            fitCardBody(
-                """
-                팩트체크 관점에서 가장 중요한 주장입니다.
-                ${item1?.factcheck?.claims?.firstOrNull()?.claimText ?: "핵심 주장 데이터 확인 진행 중"}.
-                판정은 ${item1?.factcheck?.claims?.firstOrNull()?.verdict ?: "insufficient"}이며
-                confidence=${item1?.factcheck?.confidence ?: 0.0} 기준으로 해석해야 합니다.
-                """.trimIndent(),
-            )
-        val card3Body =
-            fitCardBody(
-                """
-                실행 판단 포인트입니다. analyst note: ${research.summary.analystNote}
-                현재 risk flags는 $flags 이며, 후속 모니터링에서는 동일 지표를 같은 시간축으로 비교해
-                과장 해석과 단기 노이즈를 분리해서 의사결정해야 합니다.
-                """.trimIndent(),
-            )
+        val card1Body = fitCardBody(research.summary.brief)
+        val card2Body = fitCardBody(research.items.firstOrNull()?.snippet ?: research.summary.brief)
+        val card3Body = fitCardBody(research.summary.analystNote)
 
         return listOf(
             CardItem(
@@ -180,25 +149,9 @@ class CardService(
 
     private fun fitCardBody(
         raw: String,
-        min: Int = 120,
         max: Int = 220,
     ): String {
-        val normalized = raw.replace(Regex("\\s+"), " ").trim()
-        var body = normalized
-        if (body.length > max) {
-            body = body.take(max - 3).trimEnd() + "..."
-        }
-        if (body.length >= min) {
-            return body
-        }
-        val filler = " 동일 기준의 추세와 근거 링크를 함께 비교해 판단 정확도를 유지하세요."
-        while (body.length < min) {
-            body = (body + filler).replace(Regex("\\s+"), " ").trim()
-            if (body.length > max) {
-                body = body.take(max - 3).trimEnd() + "..."
-                break
-            }
-        }
-        return body
+        val body = raw.replace(Regex("\\s+"), " ").trim()
+        return if (body.length > max) body.take(max - 3).trimEnd() + "..." else body
     }
 }
