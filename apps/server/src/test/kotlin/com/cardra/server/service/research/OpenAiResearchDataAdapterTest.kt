@@ -43,4 +43,29 @@ class OpenAiResearchDataAdapterTest {
         val config = OpenAiResearchConfig()
         assertEquals(20L, config.webSearchTimeoutSeconds)
     }
+
+    @Test
+    fun `OpenAiResponsesResponse extracts text from message output`() {
+        val mapper = jacksonObjectMapper()
+        val json =
+            """
+            {
+              "output": [
+                {"type": "web_search_call", "content": []},
+                {"type": "message", "content": [
+                  {"type": "output_text", "text": "검색 결과 텍스트"}
+                ]}
+              ]
+            }
+            """.trimIndent()
+        val response = mapper.readValue(json, OpenAiResponsesResponse::class.java)
+        val text =
+            response.output
+                .filter { it.type == "message" }
+                .flatMap { it.content }
+                .filter { it.type == "output_text" }
+                .mapNotNull { it.text }
+                .joinToString("\n")
+        assertEquals("검색 결과 텍스트", text)
+    }
 }

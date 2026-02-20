@@ -523,3 +523,20 @@ data class OpenAiResearchPayload(
     val items: List<ResearchItemDto> = emptyList(),
     val summary: ResearchSummaryDto? = null,
 )
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class OpenAiResponsesResponse(
+    val output: List<OpenAiResponseOutput> = emptyList(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class OpenAiResponseOutput(
+    val type: String = "",
+    val content: List<OpenAiResponseContent> = emptyList(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class OpenAiResponseContent(
+    val type: String = "",
+    val text: String? = null,
+)
