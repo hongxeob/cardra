@@ -83,6 +83,12 @@ class OpenAiResearchDataAdapter(
             .readTimeout(Duration.ofSeconds(config.timeoutSeconds))
             .build()
 
+    private val webSearchRestTemplate: RestTemplate =
+        restTemplateBuilder
+            .connectTimeout(Duration.ofSeconds(config.webSearchTimeoutSeconds))
+            .readTimeout(Duration.ofSeconds(config.webSearchTimeoutSeconds))
+            .build()
+
     override fun fetch(
         req: ResearchRunRequest,
         traceId: String,
@@ -191,6 +197,67 @@ class OpenAiResearchDataAdapter(
             providerCalls = 1,
             cacheHit = false,
         )
+    }
+
+    private fun callWebSearch(
+        keyword: String,
+        timeRange: String,
+        traceId: String,
+    ): String {
+        val endpoint = "${config.baseUrl.trimEnd('/')}/v1/responses"
+        val requestBody =
+            mapOf(
+                "model" to config.model,
+                "tools" to listOf(mapOf("type" to "web_search_preview")),
+                "input" to
+                    """
+                    최근 $timeRange 내 '$keyword' 관련 주요 뉴스와 이슈를 검색해줘.
+                    각 기사의 제목, 핵심 내용, 출처(매체명, URL), 발행일을 포함해서 최대 5개 정리해줘.
+                    """.trimIndent(),
+            )
+        val request =
+            RequestEntity
+                .post(URI(endpoint))
+                .header("Authorization", "Bearer ${config.apiKey}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+
+        val response =
+            try {
+                webSearchRestTemplate.exchange(request, OpenAiResponsesResponse::class.java)
+            } catch (e: RestClientResponseException) {
+                logger.warn(
+                    "research_openai_websearch_http_error: traceId={} status={} body={}",
+                    traceId,
+                    e.statusCode.value(),
+                    e.responseBodyAsString.take(300),
+                )
+                throw mapHttpError(e)
+            } catch (e: Exception) {
+                logger.error("research_openai_websearch_transport_error: traceId={}", traceId, e)
+                throw ExternalResearchTimeoutError("OpenAI web search call failed")
+            }
+
+        val text =
+            response.body
+                ?.output
+                ?.filter { it.type == "message" }
+                ?.flatMap { it.content }
+                ?.filter { it.type == "output_text" }
+                ?.mapNotNull { it.text }
+                ?.joinToString("\n")
+                .orEmpty()
+
+        if (text.isBlank()) {
+            throw ExternalResearchSchemaError("OpenAI web search returned empty result")
+        }
+
+        logger.info(
+            "research_openai_websearch_success: traceId={} textLength={}",
+            traceId,
+            text.length,
+        )
+        return text
     }
 
     private fun mapHttpError(e: RestClientResponseException): ExternalResearchError {

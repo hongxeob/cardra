@@ -45,6 +45,20 @@ class OpenAiResearchDataAdapterTest {
     }
 
     @Test
+    fun `throws schema error when web search returns empty text`() {
+        val config =
+            OpenAiResearchConfig().apply {
+                enabled = false
+                apiKey = "sk-test"
+                model = "gpt-4.1-mini"
+            }
+        val adapter = OpenAiResearchDataAdapter(config, jacksonObjectMapper(), RestTemplateBuilder())
+        assertThrows(ExternalResearchSchemaError::class.java) {
+            adapter.fetch(ResearchRunRequest(keyword = "AI"), "trace-1")
+        }
+    }
+
+    @Test
     fun `OpenAiResponsesResponse extracts text from message output`() {
         val mapper = jacksonObjectMapper()
         val json =
