@@ -110,6 +110,22 @@ class OpenAiResearchDataAdapter(
             req.maxItems,
         )
 
+        val searchText = callWebSearch(req.keyword, req.timeRange, traceId)
+        val payload = callStructuring(searchText, req, traceId)
+
+        return ResearchDataPayload(
+            items = payload.items,
+            summary = payload.summary ?: throw ExternalResearchSchemaError("OpenAI structuring response contains no summary"),
+            providerCalls = 2,
+            cacheHit = false,
+        )
+    }
+
+    private fun callStructuring(
+        searchText: String,
+        req: ResearchRunRequest,
+        traceId: String,
+    ): OpenAiResearchPayload {
         val endpoint = "${config.baseUrl.trimEnd('/')}/v1/chat/completions"
         val requestBody =
             mapOf(
@@ -118,14 +134,8 @@ class OpenAiResearchDataAdapter(
                 "response_format" to mapOf("type" to "json_object"),
                 "messages" to
                     listOf(
-                        mapOf(
-                            "role" to "system",
-                            "content" to OPENAI_RESEARCH_SYSTEM_PROMPT,
-                        ),
-                        mapOf(
-                            "role" to "user",
-                            "content" to buildOpenAiUserPrompt(req, traceId),
-                        ),
+                        mapOf("role" to "system", "content" to OPENAI_STRUCTURE_SYSTEM_PROMPT),
+                        mapOf("role" to "user", "content" to buildStructuringPrompt(searchText, req, traceId)),
                     ),
             )
         val request =
@@ -140,21 +150,16 @@ class OpenAiResearchDataAdapter(
                 restTemplate.exchange(request, OpenAiChatResponse::class.java)
             } catch (e: RestClientResponseException) {
                 logger.warn(
-                    "research_openai_http_error: traceId={} status={} statusText={} body={}",
+                    "research_openai_structure_http_error: traceId={} status={} body={}",
                     traceId,
                     e.statusCode.value(),
-                    e.statusText,
                     e.responseBodyAsString.take(300),
                 )
                 throw mapHttpError(e)
             } catch (e: Exception) {
-                logger.error("research_openai_transport_error: traceId={}", traceId, e)
-                throw ExternalResearchTimeoutError("OpenAI research call failed")
+                logger.error("research_openai_structure_transport_error: traceId={}", traceId, e)
+                throw ExternalResearchTimeoutError("OpenAI structuring call failed")
             }
-
-        if (!response.statusCode.is2xxSuccessful) {
-            throw ExternalResearchUpstreamError("OpenAI returned non-success status: ${response.statusCode}")
-        }
 
         val rawContent =
             response.body
@@ -165,38 +170,17 @@ class OpenAiResearchDataAdapter(
                 ?.trim()
                 .orEmpty()
 
-        logger.info("research_openai_raw_response: traceId={} content={}", traceId, rawContent)
+        logger.info("research_openai_structure_raw: traceId={} content={}", traceId, rawContent)
 
         if (rawContent.isBlank()) {
-            throw ExternalResearchSchemaError("OpenAI returned empty content")
+            throw ExternalResearchSchemaError("OpenAI structuring returned empty content")
         }
 
-        val payload =
-            try {
-                objectMapper.readValue(stripCodeFence(rawContent), OpenAiResearchPayload::class.java)
-            } catch (_: Exception) {
-                throw ExternalResearchSchemaError("OpenAI response is not valid research JSON payload")
-            }
-
-        if (payload.items.isEmpty()) {
-            throw ExternalResearchSchemaError("OpenAI response contains no items")
+        return try {
+            objectMapper.readValue(stripCodeFence(rawContent), OpenAiResearchPayload::class.java)
+        } catch (_: Exception) {
+            throw ExternalResearchSchemaError("OpenAI structuring response is not valid JSON payload")
         }
-        if (payload.summary == null) {
-            throw ExternalResearchSchemaError("OpenAI response contains no summary")
-        }
-        logger.info(
-            "research_openai_success: traceId={} items={} providerCalls={}",
-            traceId,
-            payload.items.size,
-            1,
-        )
-
-        return ResearchDataPayload(
-            items = payload.items,
-            summary = payload.summary,
-            providerCalls = 1,
-            cacheHit = false,
-        )
     }
 
     private fun callWebSearch(
@@ -454,23 +438,29 @@ class FallbackResearchDataAdapter(
         }
 }
 
-private const val OPENAI_RESEARCH_SYSTEM_PROMPT =
-    "You are a research extraction engine. Return JSON only with camelCase keys and no markdown."
+private const val OPENAI_STRUCTURE_SYSTEM_PROMPT =
+    "You are a research structuring engine. " +
+        "Given real web search results, extract and return JSON only with camelCase keys and no markdown. " +
+        "Use only information present in the search results. Do not fabricate URLs, publishers, or facts."
 
-private fun buildOpenAiUserPrompt(
+private fun buildStructuringPrompt(
+    searchText: String,
     req: ResearchRunRequest,
     traceId: String,
 ): String =
     """
-    Build research payload for the request below.
-    Request:
+    Below are real web search results for '${req.keyword}'.
+    Convert them into a structured research payload.
+
+    Search results:
+    $searchText
+
+    Request context:
     - keyword: ${req.keyword}
     - language: ${req.language}
     - country: ${req.country}
     - timeRange: ${req.timeRange}
     - maxItems: ${req.maxItems}
-    - summaryLevel: ${req.summaryLevel}
-    - factcheckMode: ${req.factcheckMode}
     - traceId: $traceId
 
     Return JSON object with this exact shape:
@@ -490,7 +480,7 @@ private fun buildOpenAiUserPrompt(
     }
     Rules:
     - 1..${req.maxItems} items
-    - Always include all required keys
+    - Use only real URLs and publisher names from the search results above
     - Do not include markdown fences
     """.trimIndent()
 
