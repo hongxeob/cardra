@@ -32,15 +32,25 @@ interface ResearchDataAdapter {
     ): ResearchDataPayload
 }
 
-sealed class ExternalResearchError(message: String) : RuntimeException(message)
+sealed class ExternalResearchError(
+    message: String,
+) : RuntimeException(message)
 
-class ExternalResearchTimeoutError(message: String) : ExternalResearchError(message)
+class ExternalResearchTimeoutError(
+    message: String,
+) : ExternalResearchError(message)
 
-class ExternalResearchRateLimitError(message: String) : ExternalResearchError(message)
+class ExternalResearchRateLimitError(
+    message: String,
+) : ExternalResearchError(message)
 
-class ExternalResearchUpstreamError(message: String) : ExternalResearchError(message)
+class ExternalResearchUpstreamError(
+    message: String,
+) : ExternalResearchError(message)
 
-class ExternalResearchSchemaError(message: String) : ExternalResearchError(message)
+class ExternalResearchSchemaError(
+    message: String,
+) : ExternalResearchError(message)
 
 @Component
 @ConfigurationProperties(prefix = "cardra.research.openai")
@@ -50,6 +60,7 @@ class OpenAiResearchConfig {
     var model: String = "gpt-4.1-mini"
     var apiKey: String = ""
     var timeoutSeconds: Long = 20
+    var webSearchTimeoutSeconds: Long = 20
     var temperature: Double = 0.2
 }
 
@@ -148,6 +159,8 @@ class OpenAiResearchDataAdapter(
                 ?.trim()
                 .orEmpty()
 
+        logger.info("research_openai_raw_response: traceId={} content={}", traceId, rawContent)
+
         if (rawContent.isBlank()) {
             throw ExternalResearchSchemaError("OpenAI returned empty content")
         }
@@ -183,12 +196,17 @@ class OpenAiResearchDataAdapter(
     private fun mapHttpError(e: RestClientResponseException): ExternalResearchError {
         val status = e.statusCode.value()
         return when {
-            status == 429 ->
+            status == 429 -> {
                 ExternalResearchRateLimitError("OpenAI call failed: ${e.statusCode} ${e.statusText}")
-            status in 500..599 ->
+            }
+
+            status in 500..599 -> {
                 ExternalResearchUpstreamError("OpenAI call failed: ${e.statusCode} ${e.statusText}")
-            else ->
+            }
+
+            else -> {
                 ExternalResearchSchemaError("OpenAI request failed: ${e.statusCode} ${e.statusText}")
+            }
         }
     }
 }
@@ -196,7 +214,7 @@ class OpenAiResearchDataAdapter(
 @Component
 @ConfigurationProperties(prefix = "cardra.research.external")
 class ExternalResearchConfig {
-    var enabled: Boolean = false
+    var enabled: Boolean = true
     var endpoint: String = ""
     var timeoutSeconds: Long = 6
 }
@@ -272,12 +290,17 @@ class ExternalResearchDataAdapter(
     private fun mapHttpError(e: RestClientResponseException): ExternalResearchError {
         val status = e.statusCode.value()
         return when {
-            status == 429 ->
+            status == 429 -> {
                 ExternalResearchRateLimitError("External research call failed: ${e.statusCode} ${e.statusText}")
-            status in 500..599 ->
+            }
+
+            status in 500..599 -> {
                 ExternalResearchUpstreamError("External research call failed: ${e.statusCode} ${e.statusText}")
-            else ->
+            }
+
+            else -> {
                 ExternalResearchSchemaError("External research rejected request: ${e.statusCode} ${e.statusText}")
+            }
         }
     }
 }
@@ -344,8 +367,8 @@ class FallbackResearchDataAdapter(
     override fun fetch(
         req: ResearchRunRequest,
         traceId: String,
-    ): ResearchDataPayload {
-        return try {
+    ): ResearchDataPayload =
+        try {
             primary.fetch(req, traceId)
         } catch (e: ExternalResearchError) {
             if (!fallbackConfig.allowStubFallback) {
@@ -362,7 +385,6 @@ class FallbackResearchDataAdapter(
             logger.warn("research_fallback_used: keyword={} reason={}", req.keyword, "UNKNOWN")
             fallback.fetch(req, traceId)
         }
-    }
 }
 
 private const val OPENAI_RESEARCH_SYSTEM_PROMPT =
@@ -383,7 +405,7 @@ private fun buildOpenAiUserPrompt(
     - summaryLevel: ${req.summaryLevel}
     - factcheckMode: ${req.factcheckMode}
     - traceId: $traceId
-    
+
     Return JSON object with this exact shape:
     {
       "items": [
@@ -420,9 +442,12 @@ private fun stripCodeFence(content: String): String {
 private fun buildStubItem(
     req: ResearchRunRequest,
     now: String,
-): ResearchItemDto {
-    return ResearchItemDto(
-        itemId = java.util.UUID.randomUUID().toString(),
+): ResearchItemDto =
+    ResearchItemDto(
+        itemId =
+            java.util.UUID
+                .randomUUID()
+                .toString(),
         title = "${req.keyword}: 최근 동향 확인",
         snippet = "최근 ${req.keyword}와 관련된 주요 변화는 출처 기반 수집으로 검증 경로를 함께 점검 중입니다.",
         source =
@@ -458,7 +483,6 @@ private fun buildStubItem(
                 regionRank = 4,
             ),
     )
-}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ExternalResearchRequest(

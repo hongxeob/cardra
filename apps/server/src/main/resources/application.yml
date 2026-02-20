@@ -27,26 +27,27 @@ app:
 cardra:
   agent:
     external:
-      enabled: false
+      enabled: true
       timeout-seconds: 6
       endpoint: ""
   research:
     allow-stub-fallback: ${CARDRA_RESEARCH_ALLOW_STUB_FALLBACK:true}
     openai:
-      enabled: ${CARDRA_RESEARCH_OPENAI_ENABLED:false}
+      enabled: ${CARDRA_RESEARCH_OPENAI_ENABLED:true}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       model: ${OPENAI_MODEL:gpt-4.1-mini}
       api-key: ${OPENAI_API_KEY:}
       timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:20}
+      web-search-timeout-seconds: ${OPENAI_WEB_SEARCH_TIMEOUT_SECONDS:20}
     external:
-      enabled: false
+      enabled: true
       timeout-seconds: 6
       endpoint: ""
   image:
     provider: ${CARDRA_IMAGE_PROVIDER:openai}
     allow-stub-fallback: ${CARDRA_IMAGE_ALLOW_STUB_FALLBACK:true}
     openai:
-      enabled: ${CARDRA_IMAGE_OPENAI_ENABLED:false}
+      enabled: ${CARDRA_IMAGE_OPENAI_ENABLED:true}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       model: ${OPENAI_IMAGE_MODEL:gpt-image-1}
       api-key: ${OPENAI_API_KEY:}
