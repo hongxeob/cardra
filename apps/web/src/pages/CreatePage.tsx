@@ -13,7 +13,7 @@ const userId = 'local-user'
 
 export function CreatePage() {
   const [keyword, setKeyword] = useState('')
-  const [tone, setTone] = useState('minimal')
+  const [tone, setTone] = useState('objective')
   const [categoryId, setCategoryId] = useState('tech')
   const navigate = useNavigate()
   const [researchMode, setResearchMode] = useState(false)
@@ -92,19 +92,6 @@ export function CreatePage() {
     )
   }
 
-  if (cardError) {
-    return (
-      <ErrorCard
-        error={cardError}
-        onRetry={() => {
-          cardMut.reset()
-          cardMut.mutate()
-        }}
-        onBack={() => navigate('/')}
-      />
-    )
-  }
-
   return (
     <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
       <header style={{ marginBottom: 'var(--space-xl)' }}>
@@ -114,6 +101,18 @@ export function CreatePage() {
         <h2 style={{ fontSize: '32px' }}>이슈 요약 생성</h2>
         <p className="muted">아무 키워드나 입력하세요. AI가 최신 이슈를 3장으로 요약합니다.</p>
       </header>
+
+      {cardError && (
+        <div style={{ marginBottom: 'var(--space-lg)' }}>
+          <ErrorCard
+            error={cardError}
+            onRetry={() => {
+              cardMut.reset()
+              cardMut.mutate()
+            }}
+          />
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card-form">
         <div className="field">

@@ -67,6 +67,11 @@ export function HomePage() {
   }, [contractData])
 
   const [health, setHealth] = useState<'ok' | 'bad' | 'loading'>('loading')
+  const [recentCards, setRecentCards] = useState<CardResponse[]>([])
+
+  useEffect(() => {
+    setRecentCards(storage.getRecentCards())
+  }, [location.key])
 
   useEffect(() => {
     healthApi
@@ -74,8 +79,6 @@ export function HomePage() {
       .then(() => setHealth('ok'))
       .catch(() => setHealth('bad'))
   }, [])
-
-  const recentCards = useMemo(() => storage.getRecentCards(), [location.key])
 
   return (
     <section style={{ animation: 'fadeIn 0.5s ease-out' }}>
