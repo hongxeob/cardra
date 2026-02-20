@@ -54,9 +54,9 @@ function Header() {
 
 export function App() {
   return (
-    <div className="app-shell" style={{ padding: 0 }}>
+    <div className="app-shell">
       <Header />
-      <main style={{ padding: '0 var(--space-md) 80px' }}>
+      <main style={{ padding: '0 0 80px' }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/create" element={<CreatePage />} />

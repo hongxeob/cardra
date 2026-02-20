@@ -2,9 +2,9 @@ import type { ResearchItem } from '../../lib/types'
 
 export function ResearchItemCard({ item }: { item: ResearchItem }) {
   return (
-    <article className="card research-item" style={{ borderLeft: '4px solid var(--color-sub)' }}>
-      <h4 style={{ fontSize: '18px', marginBottom: 'var(--space-xs)' }}>{item.title}</h4>
-      <p className="card-body" style={{ fontSize: '14px', marginBottom: 'var(--space-sm)' }}>{item.snippet}</p>
+    <article className="card research-item" style={{ borderLeft: '4px solid var(--color-sub)', overflowWrap: 'break-word', maxWidth: '100%' }}>
+      <h4 style={{ fontSize: '18px', marginBottom: 'var(--space-xs)', wordBreak: 'break-word' }}>{item.title}</h4>
+      <p className="card-body" style={{ fontSize: '14px', marginBottom: 'var(--space-sm)', wordBreak: 'break-word' }}>{item.snippet}</p>
       
       <section className="research-meta" style={{ display: 'grid', gap: '2px', marginBottom: 'var(--space-sm)' }}>
         <p className="muted" style={{ fontWeight: 600 }}>출처: {item.source.publisher}</p>
