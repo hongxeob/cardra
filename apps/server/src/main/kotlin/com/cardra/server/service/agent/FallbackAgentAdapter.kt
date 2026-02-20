@@ -16,9 +16,13 @@ class FallbackAgentAdapter(
 ) : AgentAdapter {
     private val logger = LoggerFactory.getLogger(FallbackAgentAdapter::class.java)
 
-    override fun composeCards(keyword: String): List<CardItem> {
+    override fun composeCards(
+        keyword: String,
+        tone: String,
+        category: String,
+    ): List<CardItem> {
         return try {
-            primaryAgent.composeCards(keyword)
+            primaryAgent.composeCards(keyword, tone, category)
         } catch (e: ExternalAgentError) {
             val reason =
                 when (e) {
@@ -29,10 +33,10 @@ class FallbackAgentAdapter(
                     else -> "unknown"
                 }
             logger.warn("agent_fallback_used: reason={} keyword={}", reason, keyword)
-            fallbackAgent.composeCards(keyword)
+            fallbackAgent.composeCards(keyword, tone, category)
         } catch (_: Exception) {
             logger.warn("agent_fallback_used: reason=unknown keyword={}", keyword)
-            fallbackAgent.composeCards(keyword)
+            fallbackAgent.composeCards(keyword, tone, category)
         }
     }
 }

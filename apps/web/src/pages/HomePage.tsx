@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { healthApi, uiApi } from '../lib/api'
 import { storage } from '../lib/storage'
@@ -35,6 +35,8 @@ function routeSignature(method: string, path: string) {
 }
 
 export function HomePage() {
+  const location = useLocation()
+
   const { data: contractData } = useQuery({
     queryKey: ['ui-contracts'],
     queryFn: uiApi.contracts,
@@ -73,7 +75,7 @@ export function HomePage() {
       .catch(() => setHealth('bad'))
   }, [])
 
-  const recentCards = useMemo(() => storage.getRecentCards(), [])
+  const recentCards = useMemo(() => storage.getRecentCards(), [location.key])
 
   return (
     <section style={{ animation: 'fadeIn 0.5s ease-out' }}>

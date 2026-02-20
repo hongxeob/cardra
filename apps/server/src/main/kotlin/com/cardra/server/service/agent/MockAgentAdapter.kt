@@ -7,7 +7,11 @@ import org.springframework.stereotype.Component
 class MockAgentAdapter(
     private val researchProvider: ResearchProvider,
 ) : AgentAdapter {
-    override fun composeCards(keyword: String): List<CardItem> {
+    override fun composeCards(
+        keyword: String,
+        tone: String,
+        category: String,
+    ): List<CardItem> {
         val sourceTs = "2026-02-19T00:00:00Z"
         val refs = researchProvider.fetch(keyword)
 

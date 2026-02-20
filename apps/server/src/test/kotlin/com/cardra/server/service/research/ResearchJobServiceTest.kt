@@ -7,6 +7,7 @@ import com.cardra.server.dto.ResearchFactcheckDto
 import com.cardra.server.dto.ResearchItemDto
 import com.cardra.server.dto.ResearchJobCreateRequest
 import com.cardra.server.dto.ResearchQuery
+import com.cardra.server.dto.ResearchRunRequest
 import com.cardra.server.dto.ResearchRunResponse
 import com.cardra.server.dto.ResearchSourceDto
 import com.cardra.server.dto.ResearchSummaryDto
@@ -19,11 +20,14 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.Optional
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 class ResearchJobServiceTest {
     private val researchService: ResearchService = mockk(relaxed = true)
@@ -134,6 +138,90 @@ class ResearchJobServiceTest {
         assertNotNull(response.result)
         assertNotNull(response.result!!.usage)
         assertTrue(response.result!!.usage!!.cacheHit)
+    }
+
+    @Test
+    fun `runJob removes running future when job is missing`() {
+        every { repository.findById("job-1") } returns Optional.empty()
+
+        val runningFutures = runningFutures()
+        runningFutures["job-1"] = CompletableFuture.completedFuture(null)
+
+        invokeRunJob("job-1")
+
+        assertTrue(!runningFutures.containsKey("job-1"))
+    }
+
+    @Test
+    fun `runJob removes running future when job was already cancelled`() {
+        val cancelled =
+            ResearchJobEntity(
+                id = "job-2",
+                keyword = "AI",
+                requestKey = "AI|ko|KR|24h|5|standard|strict",
+                traceId = "trace-2",
+                status = ResearchJobStatus.CANCELLED,
+                createdAt = Instant.parse("2026-02-19T00:00:00Z"),
+                updatedAt = Instant.parse("2026-02-19T00:00:00Z"),
+            )
+        every { repository.findById("job-2") } returns Optional.of(cancelled)
+
+        val runningFutures = runningFutures()
+        runningFutures["job-2"] = CompletableFuture.completedFuture(null)
+
+        invokeRunJob("job-2")
+
+        assertTrue(!runningFutures.containsKey("job-2"))
+    }
+
+    @Test
+    fun `cancelJob removes running future even when in-memory cancel fails`() {
+        val running =
+            ResearchJobEntity(
+                id = "job-3",
+                keyword = "AI",
+                requestKey = "AI|ko|KR|24h|5|standard|strict",
+                traceId = "trace-3",
+                status = ResearchJobStatus.RUNNING,
+                createdAt = Instant.parse("2026-02-19T00:00:00Z"),
+                updatedAt = Instant.parse("2026-02-19T00:00:00Z"),
+            )
+        every { repository.findById("job-3") } returns Optional.of(running)
+
+        val future = mockk<Future<*>>()
+        every { future.cancel(true) } returns false
+
+        val runningFutures = runningFutures()
+        runningFutures["job-3"] = future
+
+        val response = service.cancelJob("job-3")
+
+        assertFalse(response.cancelled)
+        assertTrue(!runningFutures.containsKey("job-3"))
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun runningFutures(): MutableMap<String, Future<*>> {
+        val field = ResearchJobService::class.java.getDeclaredField("runningFutures")
+        field.isAccessible = true
+        return field.get(service) as MutableMap<String, Future<*>>
+    }
+
+    private fun invokeRunJob(jobId: String) {
+        val method =
+            ResearchJobService::class.java.getDeclaredMethod(
+                "runJob",
+                String::class.java,
+                ResearchRunRequest::class.java,
+                String::class.java,
+            )
+        method.isAccessible = true
+        method.invoke(
+            service,
+            jobId,
+            ResearchRunRequest(keyword = "AI"),
+            "trace-test",
+        )
     }
 
     private fun sampleResult(

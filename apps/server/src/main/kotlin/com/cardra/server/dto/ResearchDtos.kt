@@ -11,6 +11,8 @@ data class ResearchRunRequest(
     val maxItems: Int = 5,
     val summaryLevel: String = "standard",
     val factcheckMode: String = "strict",
+    val tone: String = "neutral",
+    val category: String = "",
 )
 
 data class ResearchItemDto(

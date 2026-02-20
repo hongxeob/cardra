@@ -25,6 +25,9 @@ app:
   card:
     max-source-links: 3
 cardra:
+  cors:
+    allowed-origins: ${CARDRA_CORS_ALLOWED_ORIGINS:}
+    allowed-origin-patterns: ${CARDRA_CORS_ALLOWED_ORIGIN_PATTERNS:}
   agent:
     external:
       enabled: true

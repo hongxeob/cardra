@@ -148,7 +148,9 @@ class CardServiceTest {
 
         assertEquals(CardStatus.COMPLETED, result.status)
         assertEquals(3, result.cards.size)
-        assertEquals("AI 에이전트 딥 리서치 요약", result.cards[0].title)
+        assertEquals("AI 이슈", result.cards[0].title)
+        assertEquals("AI 확산", result.cards[1].title)
+        assertEquals("근거 기반 분석", result.cards[2].title)
         verify(exactly = 1) { researchService.runResearch(any(), any()) }
     }
 
@@ -157,6 +159,76 @@ class CardServiceTest {
         assertThrows(IllegalArgumentException::class.java) {
             service.createCard(CreateCardRequest(keyword = " "))
         }
+    }
+
+    @Test
+    fun `createCard deep mode should extract title from summary when item title is blank`() {
+        val saved = slot<CardEntity>()
+        every { repository.save(capture(saved)) } answers { saved.captured }
+        every { researchService.runResearch(any(), any()) } returns
+            ResearchRunResponse(
+                traceId = "trace-2",
+                status = "completed",
+                generatedAt = "2026-02-19T00:00:00Z",
+                query =
+                    ResearchQuery(
+                        keyword = "AI 에이전트",
+                        language = "ko",
+                        country = "KR",
+                        timeRange = "24h",
+                    ),
+                items =
+                    listOf(
+                        ResearchItemDto(
+                            itemId = "r1",
+                            title = "  ",
+                            snippet = "첫번째 이슈 설명",
+                            source =
+                                ResearchSourceDto(
+                                    publisher = "news",
+                                    url = "https://example.com/1",
+                                    sourceType = "news",
+                                ),
+                            timestamps =
+                                ResearchTimestampsDto(
+                                    publishedAt = "2026-02-19T00:00:00Z",
+                                    collectedAt = "2026-02-19T00:00:00Z",
+                                    lastVerifiedAt = "2026-02-19T00:00:00Z",
+                                ),
+                            factcheck =
+                                ResearchFactcheckDto(
+                                    status = "supported",
+                                    confidence = 0.9,
+                                    confidenceReasons = listOf("match"),
+                                    claims = emptyList(),
+                                ),
+                            trend =
+                                ResearchTrendDto(
+                                    trendScore = 88,
+                                    velocity = 1.2,
+                                    regionRank = 1,
+                                ),
+                        ),
+                    ),
+                summary =
+                    ResearchSummaryDto(
+                        brief = "딥리서치 핵심 요약",
+                        analystNote = " ",
+                        riskFlags = listOf("변동성 확대"),
+                    ),
+                usage =
+                    ResearchUsageDto(
+                        providerCalls = 1,
+                        latencyMs = 1200,
+                        cacheHit = false,
+                    ),
+            )
+
+        val result = service.createCard(CreateCardRequest(keyword = "AI 에이전트", mode = "deep"))
+
+        assertEquals("딥리서치 핵심 요약", result.cards[0].title)
+        assertEquals("첫번째 이슈 설명", result.cards[1].title)
+        assertEquals("변동성 확대", result.cards[2].title)
     }
 
     @Test

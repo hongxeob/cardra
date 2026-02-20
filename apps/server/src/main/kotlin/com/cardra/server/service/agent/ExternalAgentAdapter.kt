@@ -42,7 +42,11 @@ class ExternalAgentAdapter(
             .readTimeout(Duration.ofSeconds(config.timeoutSeconds))
             .build()
 
-    override fun composeCards(keyword: String): List<CardItem> {
+    override fun composeCards(
+        keyword: String,
+        tone: String,
+        category: String,
+    ): List<CardItem> {
         if (!config.enabled) {
             throw ExternalAgentSchemaError("External agent is disabled")
         }
@@ -54,7 +58,7 @@ class ExternalAgentAdapter(
             RequestEntity
                 .post(URI(config.endpoint))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(ExternalComposeRequest(keyword = keyword))
+                .body(ExternalComposeRequest(keyword = keyword, tone = tone, category = category))
 
         val response =
             try {
@@ -109,6 +113,8 @@ class ExternalAgentAdapter(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ExternalComposeRequest(
     val keyword: String,
+    val tone: String = "neutral",
+    val category: String = "",
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -110,7 +110,7 @@ class OpenAiResearchDataAdapter(
             req.maxItems,
         )
 
-        val searchText = callWebSearch(req.keyword, req.timeRange, traceId)
+        val searchText = callWebSearch(req.keyword, req.timeRange, req.category, traceId)
         val payload = callStructuring(searchText, req, traceId)
 
         if (payload.items.isEmpty()) {
@@ -174,7 +174,7 @@ class OpenAiResearchDataAdapter(
                 ?.trim()
                 .orEmpty()
 
-        logger.info("research_openai_structure_raw: traceId={} content={}", traceId, rawContent)
+        logger.debug("research_openai_structure_raw: traceId={} contentLength={}", traceId, rawContent.length)
 
         if (rawContent.isBlank()) {
             throw ExternalResearchSchemaError("OpenAI structuring returned empty content")
@@ -190,16 +190,18 @@ class OpenAiResearchDataAdapter(
     private fun callWebSearch(
         keyword: String,
         timeRange: String,
+        category: String,
         traceId: String,
     ): String {
         val endpoint = "${config.baseUrl.trimEnd('/')}/v1/responses"
+        val categoryPrefix = if (category.isNotBlank()) "[$category] 분야에서 " else ""
         val requestBody =
             mapOf(
                 "model" to config.model,
                 "tools" to listOf(mapOf("type" to "web_search_preview")),
                 "input" to
                     """
-                    최근 $timeRange 내 '$keyword' 관련 주요 뉴스와 이슈를 검색해줘.
+                    ${categoryPrefix}최근 $timeRange 내 '$keyword' 관련 주요 뉴스와 이슈를 검색해줘.
                     각 기사의 제목, 핵심 내용, 출처(매체명, URL), 발행일을 포함해서 최대 5개 정리해줘.
                     """.trimIndent(),
             )
@@ -466,42 +468,47 @@ private fun buildStructuringPrompt(
     searchText: String,
     req: ResearchRunRequest,
     traceId: String,
-): String =
-    """
-    Below are real web search results for '${req.keyword}'.
-    Convert them into a structured research payload.
+): String {
+    val categoryLine = if (req.category.isNotBlank()) "- category: ${req.category}" else ""
+    return """
+        Below are real web search results for '${req.keyword}'.
+        Convert them into a structured research payload.
 
-    Search results:
-    $searchText
+        Search results:
+        $searchText
 
-    Request context:
-    - keyword: ${req.keyword}
-    - language: ${req.language}
-    - country: ${req.country}
-    - timeRange: ${req.timeRange}
-    - maxItems: ${req.maxItems}
-    - traceId: $traceId
+        Request context:
+        - keyword: ${req.keyword}
+        - language: ${req.language}
+        - country: ${req.country}
+        - timeRange: ${req.timeRange}
+        - maxItems: ${req.maxItems}
+        - tone: ${req.tone}
+        $categoryLine
+        - traceId: $traceId
 
-    Return JSON object with this exact shape:
-    {
-      "items": [
+        Return JSON object with this exact shape:
         {
-          "itemId": "string",
-          "title": "string",
-          "snippet": "string",
-          "source": {"publisher":"string","url":"https://...","sourceType":"news|social|official|factcheck","author":"string|null"},
-          "timestamps": {"publishedAt":"ISO-8601","collectedAt":"ISO-8601","lastVerifiedAt":"ISO-8601"},
-          "factcheck": {"status":"supported|disputed|insufficient|false-risk","confidence":0.0,"confidenceReasons":["string"],"claims":[{"claimText":"string","verdict":"supported|disputed|insufficient|false-risk","evidenceIds":["string"]}]},
-          "trend": {"trendScore":0,"velocity":0.0,"regionRank":0}
+          "items": [
+            {
+              "itemId": "string",
+              "title": "string",
+              "snippet": "string",
+              "source": {"publisher":"string","url":"https://...","sourceType":"news|social|official|factcheck","author":"string|null"},
+              "timestamps": {"publishedAt":"ISO-8601","collectedAt":"ISO-8601","lastVerifiedAt":"ISO-8601"},
+              "factcheck": {"status":"supported|disputed|insufficient|false-risk","confidence":0.0,"confidenceReasons":["string"],"claims":[{"claimText":"string","verdict":"supported|disputed|insufficient|false-risk","evidenceIds":["string"]}]},
+              "trend": {"trendScore":0,"velocity":0.0,"regionRank":0}
+            }
+          ],
+          "summary": {"brief":"string","analystNote":"string","riskFlags":["string"]}
         }
-      ],
-      "summary": {"brief":"string","analystNote":"string","riskFlags":["string"]}
-    }
-    Rules:
-    - 1..${req.maxItems} items
-    - Use only real URLs and publisher names from the search results above
-    - Do not include markdown fences
-    """.trimIndent()
+        Rules:
+        - 1..${req.maxItems} items
+        - Use only real URLs and publisher names from the search results above
+        - Write brief and analystNote in a '${req.tone}' voice/style
+        - Do not include markdown fences
+        """.trimIndent()
+}
 
 private fun stripCodeFence(content: String): String {
     val trimmed = content.trim()

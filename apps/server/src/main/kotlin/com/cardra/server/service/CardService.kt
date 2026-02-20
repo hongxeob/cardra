@@ -33,8 +33,8 @@ class CardService(
 
         val items =
             when (mode) {
-                "deep" -> composeResearchBackedCards(keyword, req.tone)
-                else -> agentAdapter.composeCards(keyword)
+                "deep" -> composeResearchBackedCards(keyword, req.tone, req.category)
+                else -> agentAdapter.composeCards(keyword, req.tone, req.category)
             }
         validateItems(items)
 
@@ -81,6 +81,7 @@ class CardService(
     private fun composeResearchBackedCards(
         keyword: String,
         tone: String,
+        category: String,
     ): List<CardItem> {
         val research =
             researchService.runResearch(
@@ -89,6 +90,8 @@ class CardService(
                     maxItems = 5,
                     summaryLevel = "standard",
                     factcheckMode = "strict",
+                    tone = tone,
+                    category = category,
                 ),
             )
         val uniqueSources = research.items.map { it.source.url }.filter { it.isNotBlank() }.distinct()
@@ -96,11 +99,36 @@ class CardService(
 
         val card1Body = fitCardBody(research.summary.brief)
         val card2Body = fitCardBody(research.items.firstOrNull()?.snippet ?: research.summary.brief)
-        val card3Body = fitCardBody(research.summary.analystNote)
+        val card3Body =
+            fitCardBody(
+                research.summary.analystNote.ifBlank {
+                    research.summary.riskFlags.firstOrNull().orEmpty().ifBlank { research.summary.brief }
+                },
+            )
+        val card1Title =
+            pickCardTitle(
+                candidates = listOf(research.items.getOrNull(0)?.title, research.summary.brief),
+                fallback = "$keyword 딥 리서치 요약",
+            )
+        val card2Title =
+            pickCardTitle(
+                candidates =
+                    listOf(
+                        research.items.getOrNull(1)?.title,
+                        research.items.getOrNull(0)?.title,
+                        research.items.firstOrNull()?.snippet,
+                    ),
+                fallback = "$keyword 팩트체크 포인트",
+            )
+        val card3Title =
+            pickCardTitle(
+                candidates = listOf(research.summary.analystNote, research.summary.riskFlags.firstOrNull()),
+                fallback = "$keyword 리스크와 액션",
+            )
 
         return listOf(
             CardItem(
-                title = "$keyword 딥 리서치 요약",
+                title = card1Title,
                 body = card1Body,
                 source = uniqueSources.ifEmpty { listOf("research://trace/${research.traceId}") },
                 sourceAt = sourceAt,
@@ -115,7 +143,7 @@ class CardService(
                 imageHint = "$keyword deep research summary",
             ),
             CardItem(
-                title = "$keyword 팩트체크 포인트",
+                title = card2Title,
                 body = card2Body,
                 source = uniqueSources.take(2).ifEmpty { listOf("research://trace/${research.traceId}") },
                 sourceAt = sourceAt,
@@ -130,7 +158,7 @@ class CardService(
                 imageHint = "$keyword factcheck evidence",
             ),
             CardItem(
-                title = "$keyword 리스크와 액션",
+                title = card3Title,
                 body = card3Body,
                 source = uniqueSources.takeLast(2).ifEmpty { listOf("research://trace/${research.traceId}") },
                 sourceAt = sourceAt,
@@ -145,6 +173,28 @@ class CardService(
                 imageHint = "$keyword risk action",
             ),
         )
+    }
+
+    private fun pickCardTitle(
+        candidates: List<String?>,
+        fallback: String,
+        max: Int = 40,
+    ): String {
+        val selected = candidates.asSequence().mapNotNull { normalizeTitleCandidate(it) }.firstOrNull() ?: fallback
+        return if (selected.length > max) selected.take(max - 3).trimEnd() + "..." else selected
+    }
+
+    private fun normalizeTitleCandidate(raw: String?): String? {
+        if (raw.isNullOrBlank()) {
+            return null
+        }
+        val compact = raw.replace(Regex("\\s+"), " ").trim()
+        if (compact.isBlank()) {
+            return null
+        }
+        val firstLine = compact.substringBefore('\n').trim()
+        val firstSentence = firstLine.substringBefore('.').substringBefore('!').substringBefore('?').trim()
+        return firstSentence.ifBlank { null }
     }
 
     private fun fitCardBody(

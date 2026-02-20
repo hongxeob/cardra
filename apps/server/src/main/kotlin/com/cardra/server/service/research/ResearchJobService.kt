@@ -114,60 +114,67 @@ class ResearchJobService(
         req: ResearchRunRequest,
         traceId: String,
     ) {
-        val state = researchJobRepository.findById(jobId).orElse(null) ?: return
-        if (state.status == ResearchJobStatus.CANCELLED) {
-            return
-        }
-
-        state.status = ResearchJobStatus.RUNNING
-        state.updatedAt = Instant.now()
-        researchJobRepository.save(state)
-
+        var state: ResearchJobEntity? = null
+        var shouldPersistState = false
         try {
-            Thread.sleep(20)
-            val result = researchService.runResearch(req, traceId)
-            val cancelled = researchJobRepository.findById(jobId).orElse(null)?.status == ResearchJobStatus.CANCELLED
-            if (cancelled) {
-                state.status = ResearchJobStatus.CANCELLED
-            } else {
-                state.resultJson =
-                    objectMapper.writeValueAsString(
-                        result.copy(
-                            usage = result.usage?.copy(cacheHit = false),
-                        ),
-                    )
-                state.errorJson = null
-                state.status = ResearchJobStatus.COMPLETED
+            state = researchJobRepository.findById(jobId).orElse(null) ?: return
+            if (state.status == ResearchJobStatus.CANCELLED) {
+                return
             }
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-            state.status = ResearchJobStatus.CANCELLED
-            state.errorJson = null
-        } catch (e: Exception) {
-            val retryAfter = if (e is IllegalArgumentException) null else 5
-            val retryable = retryAfter != null
 
-            state.errorJson =
-                objectMapper.writeValueAsString(
-                    ResearchJobErrorResponse(
-                        code = "RESEARCH_JOB_FAILED",
-                        message = e.message ?: "Unexpected error",
-                        retryable = retryable,
-                        retryAfter = retryAfter,
-                        traceId = traceId,
-                        usage =
-                            ResearchUsageDto(
-                                providerCalls = 1,
-                                latencyMs = 0,
-                                cacheHit = false,
-                            ),
-                    ),
-                )
-            state.resultJson = null
-            state.status = ResearchJobStatus.FAILED
-        } finally {
+            state.status = ResearchJobStatus.RUNNING
             state.updatedAt = Instant.now()
             researchJobRepository.save(state)
+            shouldPersistState = true
+
+            try {
+                Thread.sleep(20)
+                val result = researchService.runResearch(req, traceId)
+                val cancelled = researchJobRepository.findById(jobId).orElse(null)?.status == ResearchJobStatus.CANCELLED
+                if (cancelled) {
+                    state.status = ResearchJobStatus.CANCELLED
+                } else {
+                    state.resultJson =
+                        objectMapper.writeValueAsString(
+                            result.copy(
+                                usage = result.usage?.copy(cacheHit = false),
+                            ),
+                        )
+                    state.errorJson = null
+                    state.status = ResearchJobStatus.COMPLETED
+                }
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                state.status = ResearchJobStatus.CANCELLED
+                state.errorJson = null
+            } catch (e: Exception) {
+                val retryAfter = if (e is IllegalArgumentException) null else 5
+                val retryable = retryAfter != null
+
+                state.errorJson =
+                    objectMapper.writeValueAsString(
+                        ResearchJobErrorResponse(
+                            code = "RESEARCH_JOB_FAILED",
+                            message = e.message ?: "Unexpected error",
+                            retryable = retryable,
+                            retryAfter = retryAfter,
+                            traceId = traceId,
+                            usage =
+                                ResearchUsageDto(
+                                    providerCalls = 1,
+                                    latencyMs = 0,
+                                    cacheHit = false,
+                                ),
+                        ),
+                    )
+                state.resultJson = null
+                state.status = ResearchJobStatus.FAILED
+            }
+        } finally {
+            if (shouldPersistState) {
+                state?.updatedAt = Instant.now()
+                state?.let { researchJobRepository.save(it) }
+            }
             runningFutures.remove(jobId)
         }
     }
@@ -245,11 +252,11 @@ class ResearchJobService(
                 false
             } else {
                 val cancelledInMemory = runningFutures[jobId]?.cancel(true) ?: true
+                runningFutures.remove(jobId)
                 if (cancelledInMemory) {
                     state.status = ResearchJobStatus.CANCELLED
                     state.updatedAt = Instant.now()
                     researchJobRepository.save(state)
-                    runningFutures.remove(jobId)
                 }
                 cancelledInMemory
             }

@@ -9,7 +9,12 @@ import java.util.UUID
 data class CreateCardRequest(
     @field:NotBlank
     val keyword: String,
+    @field:Pattern(
+        regexp = "^(neutral|objective|insightful|witty|summary|minimal)$",
+        message = "tone must be one of: neutral, objective, insightful, witty, summary, minimal",
+    )
     val tone: String = "neutral",
+    val category: String = "",
     @field:Pattern(regexp = "^(quick|deep)$", message = "mode must be one of: quick, deep")
     val mode: String = "quick",
 )

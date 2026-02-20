@@ -92,8 +92,17 @@ export function CreatePage() {
     )
   }
 
-  if (cardError && !cardError.retryable) {
-    return <ErrorCard error={cardError} onBack={() => navigate('/')} />
+  if (cardError) {
+    return (
+      <ErrorCard
+        error={cardError}
+        onRetry={() => {
+          cardMut.reset()
+          cardMut.mutate()
+        }}
+        onBack={() => navigate('/')}
+      />
+    )
   }
 
   return (

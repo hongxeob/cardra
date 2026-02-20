@@ -17,8 +17,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
+import javax.sql.DataSource
 
 class CardControllerTest {
     private val service: CardService = mockk(relaxed = true)
@@ -112,11 +114,18 @@ class CardControllerTest {
 
     @Test
     fun `health is okay`() {
+        val dataSource: DataSource = mockk()
+        val connection: Connection = mockk()
+        every { dataSource.connection } returns connection
+        every { connection.isValid(2) } returns true
+        every { connection.close() } returns Unit
+
         val mvc2: MockMvc =
-            MockMvcBuilders.standaloneSetup(HealthController()).build()
+            MockMvcBuilders.standaloneSetup(HealthController(dataSource)).build()
 
         mvc2.perform(get("/api/v1/health"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.keyword").value("health"))
+            .andExpect(jsonPath("$.status").value("ok"))
+            .andExpect(jsonPath("$.db").value("ok"))
     }
 }

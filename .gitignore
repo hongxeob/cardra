@@ -14,6 +14,9 @@ apps/web/*.log
 
 # Runtime
 *.log
+.omx/logs/
+.omx/state/
+.omx/metrics.json
 
 # Local secrets / env
 .env
