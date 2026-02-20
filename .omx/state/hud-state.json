@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-02-19T08:46:50.756Z",
-  "turn_count": 33,
-  "last_agent_output": "문서화 시작해뒀습니다.\n\n- 신규 문서: `/Users/mediquitous/Desktop/project/cardra/docs/pm/cardra-session-log-2026-02"
+  "last_turn_at": "2026-02-20T01:42:06.579Z",
+  "turn_count": 35,
+  "last_agent_output": "아니요, 보통 `OFF`라고 해서 OpenAI 호출이 완전히 없어지진 않습니다.\n\n일반적으로는:\n- `Deep Research OFF` = OpenAI는 호출하되, 빠른/단순 경로"
 }

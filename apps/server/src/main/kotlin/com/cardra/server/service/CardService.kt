@@ -11,6 +11,8 @@ import com.cardra.server.exception.CardNotFoundException
 import com.cardra.server.repository.CardRepository
 import com.cardra.server.service.agent.AgentAdapter
 import com.cardra.server.service.research.ResearchService
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -21,6 +23,7 @@ class CardService(
     private val cardRepository: CardRepository,
     private val agentAdapter: AgentAdapter,
     private val researchService: ResearchService,
+    private val objectMapper: ObjectMapper,
 ) {
     @Transactional
     fun createCard(req: CreateCardRequest): CardResponse {
@@ -38,7 +41,7 @@ class CardService(
         val entity =
             CardEntity(
                 keyword = keyword,
-                content = items.joinToString("\n---\n") { it.body },
+                content = objectMapper.writeValueAsString(items),
                 status = CardStatus.COMPLETED,
                 sourceCount = items.sumOf { it.source.size },
             )
@@ -61,17 +64,7 @@ class CardService(
         return CardResponse(e.id!!, e.keyword, cards, e.status, e.createdAt ?: Instant.now())
     }
 
-    private fun parseCards(raw: String): List<CardItem> {
-        val chunks = raw.split("\n---\n")
-        return chunks.filter { it.isNotBlank() }.mapIndexed { idx, text ->
-            CardItem(
-                title = "카드 ${idx + 1}",
-                body = text,
-                source = listOf("agent://system", "agent://final"),
-                sourceAt = Instant.now().toString(),
-            )
-        }
-    }
+    private fun parseCards(raw: String): List<CardItem> = objectMapper.readValue(raw)
 
     private fun validateItems(items: List<CardItem>) {
         require(items.isNotEmpty()) { "cards must not be empty" }

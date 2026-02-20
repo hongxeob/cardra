@@ -2,6 +2,7 @@ package com.cardra.server.service
 
 import com.cardra.server.domain.CardEntity
 import com.cardra.server.domain.CardStatus
+import com.cardra.server.dto.CardItem
 import com.cardra.server.dto.CreateCardRequest
 import com.cardra.server.dto.ResearchFactcheckDto
 import com.cardra.server.dto.ResearchItemDto
@@ -18,6 +19,7 @@ import com.cardra.server.service.agent.AgentAdapter
 import com.cardra.server.service.agent.MockAgentAdapter
 import com.cardra.server.service.agent.NoopResearchProvider
 import com.cardra.server.service.research.ResearchService
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -33,7 +35,8 @@ class CardServiceTest {
     private val repository: CardRepository = mockk(relaxed = true)
     private val adapter: AgentAdapter = MockAgentAdapter(NoopResearchProvider())
     private val researchService: ResearchService = mockk(relaxed = true)
-    private val service = CardService(repository, adapter, researchService)
+    private val objectMapper = jacksonObjectMapper()
+    private val service = CardService(repository, adapter, researchService, objectMapper)
 
     @Test
     fun `createCard should persist and return response`() {
@@ -159,12 +162,17 @@ class CardServiceTest {
     @Test
     fun `getCard should return parsed cards by id`() {
         val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
+        val storedItems =
+            listOf(
+                CardItem(title = "카드 1", body = "card body one", source = listOf("s://a"), sourceAt = "2026-02-19T00:00:00Z"),
+                CardItem(title = "카드 2", body = "card body two", source = listOf("s://b"), sourceAt = "2026-02-19T00:00:00Z"),
+            )
         every { repository.findById(id) } returns
             Optional.of(
                 CardEntity(
                     id = id,
                     keyword = "AI 에이전트",
-                    content = "card body one\n---\ncard body two",
+                    content = objectMapper.writeValueAsString(storedItems),
                     status = CardStatus.COMPLETED,
                     sourceCount = 2,
                     createdAt = Instant.parse("2026-02-19T00:00:00Z"),
@@ -176,6 +184,41 @@ class CardServiceTest {
         assertEquals("AI 에이전트", result.keyword)
         assertEquals(2, result.cards.size)
         assertEquals("카드 1", result.cards[0].title)
+    }
+
+    @Test
+    fun `getCard should preserve original source title and sourceAt`() {
+        val id = UUID.fromString("44444444-4444-4444-4444-444444444444")
+        val storedItems =
+            listOf(
+                CardItem(
+                    title = "실제 뉴스 제목",
+                    body = "card body",
+                    source = listOf("https://news.example.com/1", "https://news.example.com/2"),
+                    sourceAt = "2026-01-01T00:00:00Z",
+                    variant = "headline",
+                    tags = listOf("tech", "ai"),
+                ),
+            )
+        every { repository.findById(id) } returns
+            Optional.of(
+                CardEntity(
+                    id = id,
+                    keyword = "AI",
+                    content = objectMapper.writeValueAsString(storedItems),
+                    status = CardStatus.COMPLETED,
+                    sourceCount = 2,
+                    createdAt = Instant.parse("2026-01-01T00:00:00Z"),
+                ),
+            )
+
+        val result = service.getCard(id)
+
+        assertEquals("실제 뉴스 제목", result.cards[0].title)
+        assertEquals(listOf("https://news.example.com/1", "https://news.example.com/2"), result.cards[0].source)
+        assertEquals("2026-01-01T00:00:00Z", result.cards[0].sourceAt)
+        assertEquals("headline", result.cards[0].variant)
+        assertEquals(listOf("tech", "ai"), result.cards[0].tags)
     }
 
     @Test
