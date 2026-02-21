@@ -1,103 +1,115 @@
 # Cardra
 
-Cardra는 키워드 기반 트렌드 카드뉴스 자동 생성 프로젝트입니다.
+Cardra는 키워드 입력만으로 트렌드 이슈를 카드뉴스로 생성하는 서비스입니다.  
+단순 API 호출이 아니라, **AI 모델/어댑터/폴백/잡 실행**을 조합해 결과 품질과 안정성을 함께 다루는 오케스트레이션 구조를 목표로 합니다.
+
+## 프로젝트 소개
+
+Cardra는 "콘텐츠 제작 시간을 줄이면서도 근거 기반 품질을 유지"하는 것을 목표로 시작한 AI 제품입니다.  
+사용자는 키워드만 입력하면, 서버가 리서치 파이프라인과 카드 생성 파이프라인을 오케스트레이션해 카드뉴스 결과를 반환합니다.
+
+핵심은 모델 1개를 단순 호출하는 구조가 아니라, 운영 환경에서 필요한 fallback, 비동기 작업 제어, API 계약 유지, 테스트/빌드 검증까지 포함한 **제품형 AI 백엔드**를 만드는 데 있습니다.
+
+## 이 프로젝트가 보여주는 점 (AI Orchestration)
+
+- 카드 생성 오케스트레이션: `quick` / `deep` 모드 분기
+- 리서치 오케스트레이션: OpenAI/External 어댑터 + fallback(stub) 체인
+- 이미지 오케스트레이션: `openai`, `gemini`(=`nano-banana` 별칭 포함) 라우팅 + fallback
+- 비동기 잡 오케스트레이션: 연구 작업 생성/상태/결과/취소 API + running future 정리
+- 에이전트 추상화: `AgentAdapter` 기반으로 공급자 교체 가능한 구조
+
+채용/지원 관점에서 보면, 이 레포는 "AI를 붙였다" 수준이 아니라  
+**여러 AI 경로를 운영 가능한 제품 흐름으로 설계/검증한 경험**을 설명하기 좋은 형태입니다.
+
+## 개발 방식 (Vibe Coding + AI)
+
+- Vibe Coding 방식으로 빠르게 가설을 실험하되, 결과물은 테스트/린트/빌드 기준으로 수렴
+- 멀티 에이전트 오케스트레이션으로 탐색-구현-검증을 병렬화해 개발 리드타임 단축
+- "아이디어를 빠르게 형태로 만들고, 품질 게이트로 안정화"하는 AI 네이티브 개발 프로세스 적용
+- 실제 코드 레벨에서는 adapter/fallback/contract-test 중심으로 운영 안정성을 우선
 
 ## 프로젝트 구조
 
-- `apps/` : 실행 애플리케이션
-- `packages/` : 공통 라이브러리/모듈
-- `docs/` : 설계/기획 문서
-- `infra/` : 배포/운영 스크립트
-- `.claude/` : PM/코더 관련 지침(총괄)
-- `.codex/` : 내용 생성/오케스트레이션 지침
-- `.gemini/` : 리서치/디자인 지침
-- `.agent-policies/` : 에이전트 라우팅/변경 규칙
+- `apps/server` : Spring Boot(Kotlin) API 서버
+- `apps/web` : React/Vite 프론트엔드
+- `infra` : 로컬 인프라 실행 스크립트(docker compose)
+- `docs` : 기획/설계/작업 문서
+- `scripts` : 개발 보조 스크립트(OMX, hooks 등)
 
-## 서버 스펙
+## 기술 스택
 
-- **Backend:** Spring Boot (Kotlin)
-- **Language:** Kotlin
-- **Database:** PostgreSQL
-- 실행 앱 위치: `apps/server/`
+- Backend: Kotlin, Spring Boot, JPA, PostgreSQL
+- Frontend: React, TypeScript, Vite
+- Docs/API: springdoc-openapi, Swagger UI
+- Tooling: Gradle, ktlint, OMX(oh-my-codex) 기반 멀티 에이전트 워크플로우
 
-## 운영 스크립트
+## 로컬 실행
+
+### 1) 인프라 실행
 
 ```bash
-cd /Users/hongxeob/Desktop/project/cardra/infra
+cd infra
 cp .env.example .env
-# 값 수정 후
-
 docker compose up --build -d
 ```
 
-## 현재 진행
-
-- 서버 MVP 뼈대 구축 완료
-- 에이전트 운영 문서 정합성 구성
-- 다음: 에이전트 호출 어댑터(리서치/작성/디자인), DB 스키마 검증, API 계약 테스트
-
-## Git Hook 설정
-
-커밋/푸시 시 `ktlintCheck`를 자동으로 돌리려면 아래를 1회 실행:
-
-```bash
-cd /Users/hongxeob/Desktop/project/cardra
-./scripts/setup-hooks.sh
-```
-
-이후 pre-commit, pre-push에서 `ktlintCheck`가 강제됩니다.
-
-## Java/Gradle 기준
-
-- 본 프로젝트 서버는 **JDK 21 + ktlint + Gradle** 기준입니다.
-- `apps/server/gradlew` 실행 시 Java 21 환경을 자동 확인/강제합니다.
-- 수동 실행 예시:
+### 2) 서버 실행
 
 ```bash
 cd apps/server
 export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
-./gradlew -version
+./gradlew bootRun
+```
+
+### 3) 웹 실행
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+## API 문서
+
+- Swagger UI: `http://localhost:9999/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:9999/v3/api-docs`
+
+## 품질 게이트
+
+```bash
+cd apps/server
 ./gradlew test
+./gradlew ktlintCheck
+./gradlew build
 ```
 
-## 다음 프로세스 진행 상태
-- 외부 에이전트(리서치/작성/디자인)는 `service.agent` 인터페이스로 추상화해 교체 가능한 구조로 정리
-- 현재는 Mock 기반 3장 카드 생성 파이프라인을 기본 운영하고, 차후 실제 API 클라이언트로 대체 예정
+## Git Hook 설정
 
-## OMX (oh-my-codex) 최소 도입 가이드
-
-Codex CLI 병렬/멀티에이전트 보조 오케스트레이션을 위해 `omx`를 사용할 수 있습니다.
-
-### 1) 설치 (현재 환경 기준)
 ```bash
-npm install -g oh-my-codex
+./scripts/setup-hooks.sh
 ```
 
-### 2) 설치 확인
+pre-commit / pre-push에서 서버 `ktlintCheck`가 실행되도록 맞춰져 있습니다.
+
+## 현재 진행 상태 (2026-02-21 기준)
+
+- 완료: ResearchService 외부 데이터 어댑터 기반 전환(Primary/Fallback)
+- 완료: 서버 API 계약 유지 및 테스트/빌드 파이프라인 통과
+- 완료: CORS 설정 추가, 비동기 잡 `runningFutures` 정리 보강
+- 완료: Swagger 문서 경로 정리 및 API 태그/설명 보강
+- 진행 중: 실제 운영 키 기준 end-to-end 호출 검증 및 배포 환경값 정리
+
+## OMX 최소 사용 예
+
 ```bash
-./scripts/omx.sh --version
-./scripts/omx.sh doctor
+./scripts/omx.sh team 3:executor "cardra 서버/웹 개선 항목을 병렬 점검해줘"
+./scripts/omx.sh team status
+./scripts/omx.sh team shutdown <team-name>
 ```
 
-### 3) 초기 설정 (Codex가 이미 로그인/설치된 경우)
 ```bash
-./scripts/omx.sh setup      # 프롬프트/스킬/AGENTS 훅 스캐폴딩
-./scripts/omx.sh doctor      # 상태 재확인
+./scripts/omx.sh --high
+./scripts/omx.sh --xhigh
 ```
 
-### 4) 최소 사용 예
-- 빠른 병렬 분할 실행:
-  ```bash
-  ./scripts/omx.sh team 3:executor "cardra 연구/개선 항목을 병렬 점검해줘"
-  ./scripts/omx.sh team status
-  ./scripts/omx.sh team shutdown <team-name>
-  ```
-- Codex 시작 플래그 강화:
-  ```bash
-  ./scripts/omx.sh --high   # 고난도 추론 모드
-  ./scripts/omx.sh --xhigh  # 최대 추론 모드(신뢰 환경 권장)
-  ```
-
-> 주의: `--madmax`는 승인/샌드박스 우회 모드이므로 신뢰 환경에서만 사용하세요.
-
-- OpenClaw 연동 포인트: 필요 시 내가 OpenClaw `exec`에서 위 `./scripts/omx.sh ...` 명령을 호출해 팀 모드 실행/상태 조회/종료를 오케스트레이션해줄 수 있습니다.
+주의: `--madmax`는 승인/샌드박스 우회 모드이므로 신뢰 환경에서만 사용하세요.
